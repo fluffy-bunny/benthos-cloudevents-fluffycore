@@ -6,11 +6,16 @@ import (
 )
 
 type (
+	JWTValidators struct {
+		Issuers  []string `json:"issuers" mapstructure:"ISSUERS"`
+		JWKSURLS []string `json:"jwksUrls" mapstructure:"JWKS_URLS"`
+	}
 	Config struct {
 		fluffycore_contracts_config.CoreConfig `mapstructure:",squash"`
 		CustomString                           string                                  `json:"CUSTOM_STRING" mapstructure:"CUSTOM_STRING"`
 		SomeSecret                             string                                  `json:"SOME_SECRET" mapstructure:"SOME_SECRET" redact:"true"`
 		OAuth2Port                             int                                     `json:"oauth2Port"  mapstructure:"OAUTH2_PORT"`
+		JWTValidators                          JWTValidators                           `json:"jwtValidators" mapstructure:"JWT_VALIDATORS"`
 		DDProfilerConfig                       *fluffycore_contracts_ddprofiler.Config `json:"ddProfilerConfig" mapstructure:"DD_PROFILER_CONFIG"`
 	}
 )
@@ -28,6 +33,7 @@ var ConfigDefaultJSON = []byte(`
 	"CUSTOM_STRING": "some default value",
 	"SOME_SECRET": "password",
 	"GRPC_GATEWAY_ENABLED": true,
+	"JWT_VALIDATORS": {},
 	"DD_PROFILER_CONFIG": {
 		"ENABLED": false,
 		"SERVICE_NAME": "in-environment",
