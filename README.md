@@ -34,4 +34,6 @@ protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=p
 
 ```bash
  docker build --file .\build\Dockerfile.processor . --tag fluffybunny.bentos.processor
+
+ docker-compose up
 ```
