@@ -32,7 +32,7 @@ service CloudEventProcessor {
 }
  
 message ProcessCloudEventsRequest {
-    repeated io.cloudevents.v1.CloudEvent events = 1;
+    io.cloudevents.v1.CloudEventBatch batch = 1;
 }
 
 message ProcessCloudEventsResponse {}

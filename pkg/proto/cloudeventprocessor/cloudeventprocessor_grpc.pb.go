@@ -40,7 +40,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CloudEventProcessorClient interface {
-	// Sends a greeting
+	// Processes a batch of cloud events.  This is an all or nothing operation.  If any of the events fail to process, then the entire batch is considered a failure.
 	ProcessCloudEvents(ctx context.Context, in *ProcessCloudEventsRequest, opts ...grpc.CallOption) (*ProcessCloudEventsResponse, error)
 }
 
@@ -65,7 +65,7 @@ func (c *cloudEventProcessorClient) ProcessCloudEvents(ctx context.Context, in *
 // All implementations must embed UnimplementedCloudEventProcessorServer
 // for forward compatibility
 type CloudEventProcessorServer interface {
-	// Sends a greeting
+	// Processes a batch of cloud events.  This is an all or nothing operation.  If any of the events fail to process, then the entire batch is considered a failure.
 	ProcessCloudEvents(context.Context, *ProcessCloudEventsRequest) (*ProcessCloudEventsResponse, error)
 	mustEmbedUnimplementedCloudEventProcessorServer()
 }

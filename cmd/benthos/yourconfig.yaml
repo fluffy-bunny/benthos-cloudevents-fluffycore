@@ -12,7 +12,7 @@ pipeline:
 
 output:
   cloudevent_output: 
-    grpc_url: "grpc://localhost:50051"
-    auth_type: "basic"
+    grpc_url: "localhost:50051"
+    auth_type: "none"
     user_name: "admin"
     password: "password"
