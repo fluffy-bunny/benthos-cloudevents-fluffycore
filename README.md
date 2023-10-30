@@ -29,3 +29,9 @@ protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=p
 
 [auth examples](https://github.com/johanbrandhorst/grpc-auth-example)  
 
+
+## Docker
+
+```bash
+ docker build --file .\build\Dockerfile.processor . --tag fluffybunny.bentos.processor
+```

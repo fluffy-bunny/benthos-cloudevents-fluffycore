@@ -1,0 +1,102 @@
+version: "3.8"
+
+x-default-service:
+  &default-service
+  deploy:
+    restart_policy:
+      condition: on-failure
+      delay: 10s
+      max_attempts: 10
+      window: 120s
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "${CONTAINER_LOG_SIZE}"
+      max-file: "${CONTAINER_LOG_COUNT}"
+  networks:
+    - benthos 
+
+services:
+  # Kafka (routes events between mock-iothub<->connector-functions and connector-*<->merge)
+  kafka:
+    <<: *default-service
+    image: "bitnami/kafka:3.3.2-debian-11-r186"
+    container_name: "${KAFKA_NAME}"
+    ports:
+      - ${KAFKA_PORT}:9092 # Internal to the mapped-in-a-box network
+      - "9093:9093" # External to the host machine (host.docker.internal)
+      - "0.0.0.0:9094:9094" # External to the host machine (host.docker.internal)
+    environment:
+      - KAFKA_BROKER_ID=1
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT,ONION:PLAINTEXT
+      - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093,ONION://:9094
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://${KAFKA_NAME}:9092,EXTERNAL://localhost:9093,ONION://kafkaonion:9094
+      - KAFKA_INTER_BROKER_LISTENER_NAME=CLIENT
+      - KAFKA_ENABLE_KRAFT=no
+      # TODO: newer containers have permission problems with those mounts
+      #volumes:
+      #- ./config/kafka/log4j.properties:/opt/bitnami/kafka/config/log4j.properties:rw
+      #- ./config/kafka/server.properties:/opt/bitnami/kafka/config/server.properties:rw
+    depends_on:
+      - zookeeper
+    healthcheck:
+      test: [ "CMD-SHELL", "kafka-broker-api-versions.sh --version" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+  kafka-ui:
+    <<: *default-service
+    image: provectuslabs/kafka-ui
+    container_name: kafka-ui
+    ports:
+      - "${KAFKA_UI_PORT}:8080"
+    restart: always
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - KAFKA_CLUSTERS_0_ZOOKEEPER=localhost:2181
+    depends_on:
+      - kafka
+  # Zookeeper for Kafka
+  zookeeper:
+    <<: *default-service
+    image: "bitnami/zookeeper:3.8.2-debian-11-r18"
+    ports:
+      - "2181:2181"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+      - ZOO_LOG_LEVEL=WARN
+    healthcheck:
+      test: [ "CMD-SHELL", "echo mntr | nc -w 2 -q 2 localhost 2181" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  create_topics:
+    <<: *default-service
+    # run interactively
+    #docker run -it --rm --network databox     -e KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181     bitnami/kafka:latest kafka-topics.sh --list  --bootstrap-server kafka:9092
+    #docker run -it --rm --network databox     -e KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181     bitnami/kafka:latest kafka-topics.sh --create --topic dfc  --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1
+    #docker run -it --rm --network databox     -e KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181     bitnami/kafka:latest kafka-topics.sh --describe --topic dfc  --bootstrap-server kafka:9092
+    #docker run -it --rm --network databox     -e KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181     bitnami/kafka:latest kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic dfc --from-beginning
+    image: "bitnami/kafka:3.3.2-debian-11-r186"
+    environment:
+      KAFKA_CFG_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    depends_on:
+      - zookeeper
+      - kafka
+    entrypoint: >
+      /bin/sh -c " 
+      kafka-topics.sh --create --topic ${KAFKA_CLOUDEVENTS_CORE_TOPIC} --bootstrap-server kafka:9092 --partitions 4 --replication-factor 1; 
+      kafka-topics.sh --create --topic ${KAFKA_CLOUDEVENTS_CORE_DEADLETTER_TOPIC} --bootstrap-server kafka:9092 --partitions 4 --replication-factor 1; 
+      "
+
+# Network
+#---------------------------------------------------
+networks:
+  benthos:
