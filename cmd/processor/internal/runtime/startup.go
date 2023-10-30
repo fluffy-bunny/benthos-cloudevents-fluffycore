@@ -6,8 +6,10 @@ import (
 	internal_auth "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/auth"
 	contracts_config "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/contracts/config"
 	services_health "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/services/health"
+	services_kafkaclient "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/services/kafkaclient"
 	services_kafkacloudeventservice "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/services/kafkacloudeventservice"
 	services_processor "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/services/processor"
+
 	internal_version "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/version"
 	di "github.com/fluffy-bunny/fluffy-dozm-di"
 	fluffycore_contracts_ddprofiler "github.com/fluffy-bunny/fluffycore/contracts/ddprofiler"
@@ -80,6 +82,7 @@ func (s *startup) ConfigureServices(ctx context.Context, builder di.ContainerBui
 	//--------------------------------------
 	services_processor.AddCloudEventProcessorServer(builder)
 	services_kafkacloudeventservice.AddKafkaCloudEventServiceServer(builder)
+	services_kafkaclient.AddSingletonKafkaClient(builder)
 }
 func (s *startup) Configure(ctx context.Context, rootContainer di.Container, unaryServerInterceptorBuilder fluffycore_contracts_middleware.IUnaryServerInterceptorBuilder, streamServerInterceptorBuilder fluffycore_contracts_middleware.IStreamServerInterceptorBuilder) {
 	log := zerolog.Ctx(ctx).With().Str("method", "Configure").Logger()
