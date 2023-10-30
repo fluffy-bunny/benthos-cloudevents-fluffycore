@@ -96,6 +96,34 @@ services:
       kafka-topics.sh --create --topic ${KAFKA_CLOUDEVENTS_CORE_DEADLETTER_TOPIC} --bootstrap-server kafka:9092 --partitions 4 --replication-factor 1; 
       "
 
+  processor:
+    <<: *default-service
+    image: "${PROCESSOR_IMAGE_NAME}"
+    container_name: "${PROCESSOR_CONTAINER_NAME}"
+    ports:
+      - ${PROCESSOR_PORT}:${PROCESSOR_PORT}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "${CONTAINER_LOG_SIZE}"
+        max-file: "${CONTAINER_LOG_COUNT}"
+    environment:
+      APPLICATION_NAME: "${PROCESSOR_APPLICATION_NAME}"      
+      APPLICATION_ENVIRONMENT: "${APPLICATION_ENVIRONMENT}"
+      LOG_LEVEL: "${LOG_LEVEL}"
+      PRETTY_LOG: "${PRETTY_LOG}"
+      PORT: "${PROCESSOR_PORT}"
+      ENABLE_GRPC_SERVER_REFLECTION: "true"
+      JWT_VALIDATORS__ISSUERS: "${JWT_VALIDATORS__ISSUERS}"
+      JWT_VALIDATORS__JWKS_URLS: "${JWT_VALIDATORS__JWKS_URLS}"
+      KAFKA_CONFIG__SEEDS: "${KAFKA_NAME}:${KAFKA_PORT}"
+    volumes:
+       - ./config/example:/config        
+    networks:
+      - benthos
+    entrypoint: ["/app/processor", "serve"]
+
+
 # Network
 #---------------------------------------------------
 networks:
