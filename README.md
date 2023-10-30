@@ -21,3 +21,8 @@ protoc --go_out=. --go_opt=paths=source_relative ./pkg/proto/cloudevents/cloudev
 
 protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --go-fluffycore-di_out=.  --go-fluffycore-di_opt=paths=source_relative ./pkg/proto/cloudeventprocessor/cloudeventprocessor.proto 
 ```
+
+## Grpc References
+
+[auth examples](https://github.com/johanbrandhorst/grpc-auth-example)  
+

@@ -6,23 +6,42 @@ import (
 	"github.com/benthosdev/benthos/v4/public/service"
 	cloudevents "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/proto/cloudevents"
 	log "github.com/rs/zerolog/log"
-	"google.golang.org/protobuf/encoding/protojson"
+	protojson "google.golang.org/protobuf/encoding/protojson"
 )
 
+var gibberishConfigSpec = service.NewConfigSpec().
+	Summary("Creates an output to a grpc service.").
+	Field(service.NewStringField("grpc_url"))
+
 func init() {
+
 	err := service.RegisterOutput(
-		"blue_stdout", service.NewConfigSpec(),
+		"blue_stdout", gibberishConfigSpec,
 		func(conf *service.ParsedConfig, mgr *service.Resources) (out service.Output, maxInFlight int, err error) {
-			return &blueOutput{}, 1, nil
+			return newBlueOutput(conf)
 		})
 	if err != nil {
 		panic(err)
 	}
+
 }
 
 //------------------------------------------------------------------------------
 
-type blueOutput struct{}
+type blueOutput struct {
+	grpcUrl string
+}
+
+func newBlueOutput(conf *service.ParsedConfig) (out service.Output, maxInFlight int, err error) {
+	grpcUrl, err := conf.FieldString("grpc_url")
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return &blueOutput{
+		grpcUrl: grpcUrl,
+	}, 1, nil
+}
 
 func (b *blueOutput) Connect(ctx context.Context) error {
 	return nil
