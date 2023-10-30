@@ -2,6 +2,8 @@ package auth
 
 import (
 	proto_cloudeventprocessor "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/proto/cloudeventprocessor"
+	proto_kafkacloudevent "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/proto/kafkacloudevent"
+
 	contracts_common "github.com/fluffy-bunny/fluffycore/contracts/common"
 	services_common_claimsprincipal "github.com/fluffy-bunny/fluffycore/services/common/claimsprincipal"
 )
@@ -11,6 +13,7 @@ var noAuthEndpoints = []string{
 	"/grpc.health.v1.Health/Check",
 	// for no no auth
 	proto_cloudeventprocessor.CloudEventProcessor_ProcessCloudEvents_FullMethodName,
+	proto_kafkacloudevent.KafkaCloudEventService_SubmitCloudEvents_FullMethodName,
 }
 
 func BuildGrpcEntrypointPermissionsClaimsMap() map[string]contracts_common.IEntryPointConfig {
