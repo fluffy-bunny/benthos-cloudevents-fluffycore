@@ -98,7 +98,7 @@ services:
 
   processor:
     <<: *default-service
-    image: "${PROCESSOR_IMAGE_NAME}"
+    image: "${PROCESSOR_IMAGE_NAME}:${PROCESSOR_IMAGE_VERSION}"
     container_name: "${PROCESSOR_CONTAINER_NAME}"
     ports:
       - ${PROCESSOR_PORT}:${PROCESSOR_PORT}
@@ -118,12 +118,23 @@ services:
       JWT_VALIDATORS__JWKS_URLS: "${JWT_VALIDATORS__JWKS_URLS}"
       KAFKA_CONFIG__SEEDS: "${KAFKA_NAME}:${KAFKA_PORT}"
     volumes:
-       - ./config/example:/config        
+       - ./config/processor:/config        
     networks:
       - benthos
     entrypoint: ["/app/processor", "serve"]
 
-
+  benthos:
+    <<: *default-service
+    image: "${BENTHOS_IMAGE_NAME}:${BENTHOS_IMAGE_VERSION}"
+    container_name: "${BENTHOS_CONTAINER_NAME}"
+    depends_on:
+      - zookeeper
+      - kafka
+    volumes:
+       - "./config/benthos/benthos.yaml:/benthos.yaml"  
+    networks:
+      - benthos
+    entrypoint: ["/app/benthos"]
 # Network
 #---------------------------------------------------
 networks:

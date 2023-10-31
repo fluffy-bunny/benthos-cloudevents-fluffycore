@@ -30,11 +30,11 @@ RUN --mount=type=ssh go mod download
 # Add remaining code
 COPY . .
 
-ARG location=github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/version
+ARG location=github.com/fluffy-bunny/fluffycore/example/server
 ARG commit=AFFE
 ARG version=0.0.0
 ARG date=19700101
-ARG BINARY=processor
+ARG BINARY=benthos
 ENV BINARY=${BINARY}
 
 ENV GOOS=linux
@@ -50,7 +50,7 @@ FROM alpine:latest
 LABEL maintainer="ghstahl@gmail.com"
 LABEL description="fluffycore example"
 
-ARG BINARY=processor
+ARG BINARY=benthos
 ENV BINARY=${BINARY}
 
 WORKDIR /app
@@ -59,4 +59,6 @@ COPY --from=build /build/${BINARY} ./
 ENV PATH=/app:${PATH}
  
 
-ENTRYPOINT ["/app/processor"]
+ENTRYPOINT ["/app/benthos"]
+
+CMD ["-c", "/benthos.yaml"]
