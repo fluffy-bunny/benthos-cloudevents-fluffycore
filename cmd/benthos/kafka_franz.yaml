@@ -3,15 +3,14 @@ input:
     seed_brokers: ["localhost:9093"]
     topics: ["cloudevents-core"]
     regexp_topics: false
-    multi_header: true
     consumer_group: "$Default"
     batching:
       count: 2
       period: 1m
       processors:
         - mapping: |
-            root.message = this
-            root.message.test = "test"      
+            root.payload = this
+            root.headers = @   
         - archive:
             format: json_array
 
