@@ -1,0 +1,30 @@
+input:
+  kafka:
+    addresses: ["localhost:9093"]
+    topic: "cloudevents-core"
+    multi_header: true
+    static_headers: {} # No default (optional)
+    metadata:
+      exclude_prefixes: []
+    max_in_flight: 64
+    batching:
+      count: 2
+      period: 1m
+      processors:
+        - archive:
+            format: json_array
+            
+pipeline:
+  threads: 1
+  processors:
+  - sleep:
+      duration: 1s
+ 
+ 
+
+output:
+  cloudevent_output: 
+    grpc_url: "localhost:9050"
+    auth_type: "none"
+    user_name: "admin"
+    password: "password"

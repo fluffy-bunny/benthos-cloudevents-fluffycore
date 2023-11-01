@@ -1,0 +1,29 @@
+input:
+  kafka_franz:
+    seed_brokers: ["localhost:9092"]
+    topics: ["cloudevents-core"]
+    regexp_topics: false
+    consumer_group: "$Default"
+    batching:
+      count: 2
+      period: 1m
+      processors:
+
+
+        - archive:
+            format: json_array
+
+pipeline:
+  threads: 1
+  processors:
+  - sleep:
+      duration: 1s
+ 
+ 
+
+output:
+  cloudevent_output: 
+    grpc_url: "processor:9050"
+    auth_type: "none"
+    user_name: "admin"
+    password: "password"
