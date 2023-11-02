@@ -9,7 +9,7 @@ input:
       period: 1m
       processors:
         - mapping: |
-            root.payload = this
+            root.value = this
             root.headers = @   
         - archive:
             format: json_array
@@ -24,7 +24,7 @@ pipeline:
 
 output:
   cloudevent_output: 
-    grpc_url: "localhost:50051"
+    grpc_url: "localhost:9050"
     auth_type: "none"
     user_name: "admin"
     password: "password"

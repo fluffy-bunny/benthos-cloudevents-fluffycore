@@ -1,6 +1,6 @@
 input:
   kafka_franz:
-    seed_brokers: ["localhost:9092"]
+    seed_brokers: ["kafka:9092"]
     topics: ["cloudevents-core"]
     regexp_topics: false
     consumer_group: "$Default"
@@ -8,8 +8,9 @@ input:
       count: 2
       period: 1m
       processors:
-
-
+        - mapping: |
+            root.value = this
+            root.headers = @   
         - archive:
             format: json_array
 

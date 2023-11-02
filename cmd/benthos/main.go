@@ -15,8 +15,8 @@ import (
 
 	// In order to import _all_ Benthos components for third party services
 	// uncomment the following line:
-	_ "github.com/benthosdev/benthos/v4/public/components/all"
-
+	//_ "github.com/benthosdev/benthos/v4/public/components/all"
+	_ "github.com/benthosdev/benthos/v4/public/components/kafka"
 	internal "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal"
 	contracts_benthos "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/benthos"
 	_ "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/input"
