@@ -30,9 +30,12 @@ service CloudEventProcessor {
   // Processes a batch of cloud events.  This is an all or nothing operation.  If any of the events fail to process, then the entire batch is considered a failure.
   rpc ProcessCloudEvents (ProcessCloudEventsRequest) returns (ProcessCloudEventsResponse) {  }
 }
- 
+message ByteBatch {
+  repeated bytes messages = 1;
+}
 message ProcessCloudEventsRequest {
     io.cloudevents.v1.CloudEventBatch batch = 1;
+    ByteBatch bad_batch = 2;
 }
 
 message ProcessCloudEventsResponse {}

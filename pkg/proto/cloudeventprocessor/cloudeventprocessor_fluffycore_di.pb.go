@@ -22,27 +22,32 @@ type UnimplementedCloudEventProcessorServerEndpointRegistration struct {
 func (UnimplementedCloudEventProcessorServerEndpointRegistration) RegisterHandler(gwmux *runtime.ServeMux, conn *grpc.ClientConn) {
 }
 
-// cloudeventprocessorServer defines the grpc server truct
-type cloudeventprocessorServer struct {
+// CloudEventProcessorFluffyCoreServer defines the grpc server truct
+type CloudEventProcessorFluffyCoreServer struct {
 	UnimplementedCloudEventProcessorServer
 	UnimplementedCloudEventProcessorServerEndpointRegistration
 }
 
 // Register the server with grpc
-func (srv *cloudeventprocessorServer) Register(s *grpc.Server) {
+func (srv *CloudEventProcessorFluffyCoreServer) Register(s *grpc.Server) {
 	RegisterCloudEventProcessorServer(s, srv)
+}
+
+// AddCloudEventProcessorServerWithExternalRegistration adds the fluffycore aware grpc server and external registration service.  Mainly used for grpc-gateway
+func AddCloudEventProcessorServerWithExternalRegistration[T ICloudEventProcessorServer](cb fluffy_dozm_di.ContainerBuilder, ctor any, register func() endpoint.IEndpointRegistration) {
+	fluffy_dozm_di.AddSingleton[endpoint.IEndpointRegistration](cb, register)
+	fluffy_dozm_di.AddScoped[ICloudEventProcessorServer](cb, ctor)
 }
 
 // AddCloudEventProcessorServer adds the fluffycore aware grpc server
 func AddCloudEventProcessorServer[T ICloudEventProcessorServer](cb fluffy_dozm_di.ContainerBuilder, ctor any) {
-	fluffy_dozm_di.AddSingleton[endpoint.IEndpointRegistration](cb, func() endpoint.IEndpointRegistration {
-		return &cloudeventprocessorServer{}
+	AddCloudEventProcessorServerWithExternalRegistration[ICloudEventProcessorServer](cb, ctor, func() endpoint.IEndpointRegistration {
+		return &CloudEventProcessorFluffyCoreServer{}
 	})
-	fluffy_dozm_di.AddScoped[ICloudEventProcessorServer](cb, ctor)
 }
 
 // ProcessCloudEvents...
-func (s *cloudeventprocessorServer) ProcessCloudEvents(ctx context.Context, request *ProcessCloudEventsRequest) (*ProcessCloudEventsResponse, error) {
+func (s *CloudEventProcessorFluffyCoreServer) ProcessCloudEvents(ctx context.Context, request *ProcessCloudEventsRequest) (*ProcessCloudEventsResponse, error) {
 	requestContainer := dicontext.GetRequestContainer(ctx)
 	downstreamService := fluffy_dozm_di.Get[ICloudEventProcessorServer](requestContainer)
 	return downstreamService.ProcessCloudEvents(ctx, request)

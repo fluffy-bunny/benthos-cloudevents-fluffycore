@@ -6,7 +6,7 @@ input:
     consumer_group: "$Default"
     batching:
       count: 2
-      period: 1m
+      period: 20s
       processors:
         - mapping: |
             root.value = this

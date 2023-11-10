@@ -39,3 +39,66 @@ protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=p
 
  docker-compose up
 ```
+
+## Services
+
+### Kafka UI
+
+[Kafka-ui](http://localhost:9090/)  
+
+### KafkaCloudEventService - grpc
+
+```bash
+grpc://localhost:9050
+```
+
+This is service to submit a cloud-event to kafka.  
+
+#### Request
+
+```json
+{
+    "batch": {
+        "events": [
+            {
+                "attributes": [
+                    {
+                        "value": {
+                            "ce_string": "test"
+                        },
+                        "key": "testkey"
+                    }
+                ],
+                "spec_version": "1.0",
+               
+                "text_data": "{\"a\":\"b\"}",
+                
+                "id": "1234",
+                "type": "my.type",
+                "source": "//my/source"
+            }
+        ]
+    }
+}
+```
+
+#### Response 
+
+```json
+{}
+```
+
+### CloudEventProcessor - grpc
+
+```bash
+grpc://localhost:9050
+```
+
+This service receives cloud-events as batches via out custom benthos output handler.
+
+**IMPORTANT**: This is an all or nothing process.  It sends the messages in batches.  There are good and bad and the processor needs to decide what it wants to do with the bad messages.  In some cases the entire batch is bad at the 
+
+### Viewer
+
+I use docker desktop and look at the logs.  My downstream processor just logs what it got and returns a nil.  
+

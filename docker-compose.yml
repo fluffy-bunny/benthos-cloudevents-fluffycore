@@ -1,25 +1,12 @@
 version: "3.8"
 
-x-default-service:
-  &default-service
-  deploy:
-    restart_policy:
-      condition: on-failure
-      delay: 10s
-      max_attempts: 10
-      window: 120s
-  logging:
-    driver: "json-file"
-    options:
-      max-size: "${CONTAINER_LOG_SIZE}"
-      max-file: "${CONTAINER_LOG_COUNT}"
-  networks:
-    - benthos 
 
 services:
   # Kafka (routes events between mock-iothub<->connector-functions and connector-*<->merge)
   kafka:
-    <<: *default-service
+    extends:
+      file: ./docker-compose-common.yml
+      service: micro
     image: "bitnami/kafka:3.3.2-debian-11-r186"
     container_name: "${KAFKA_NAME}"
     ports:
@@ -49,7 +36,9 @@ services:
       retries: 5
       start_period: 30s
   kafka-ui:
-    <<: *default-service
+    extends:
+      file: ./docker-compose-common.yml
+      service: micro
     image: provectuslabs/kafka-ui
     container_name: kafka-ui
     ports:
@@ -63,7 +52,9 @@ services:
       - kafka
   # Zookeeper for Kafka
   zookeeper:
-    <<: *default-service
+    extends:
+      file: ./docker-compose-common.yml
+      service: micro
     image: "bitnami/zookeeper:3.8.2-debian-11-r18"
     ports:
       - "2181:2181"
@@ -77,7 +68,9 @@ services:
       retries: 5
 
   create_topics:
-    <<: *default-service
+    extends:
+      file: ./docker-compose-common.yml
+      service: micro
     # run interactively
     #docker run -it --rm --network databox     -e KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181     bitnami/kafka:latest kafka-topics.sh --list  --bootstrap-server kafka:9092
     #docker run -it --rm --network databox     -e KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181     bitnami/kafka:latest kafka-topics.sh --create --topic dfc  --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1
@@ -97,7 +90,9 @@ services:
       "
 
   processor:
-    <<: *default-service
+    extends:
+      file: ./docker-compose-common.yml
+      service: micro
     image: "${PROCESSOR_IMAGE_NAME}:${PROCESSOR_IMAGE_VERSION}"
     container_name: "${PROCESSOR_CONTAINER_NAME}"
     ports:
@@ -124,7 +119,9 @@ services:
     entrypoint: ["/app/processor", "serve"]
 
   benthos:
-    <<: *default-service
+    extends:
+      file: ./docker-compose-common.yml
+      service: micro
     image: "${BENTHOS_IMAGE_NAME}:${BENTHOS_IMAGE_VERSION}"
     container_name: "${BENTHOS_CONTAINER_NAME}"
     depends_on:
