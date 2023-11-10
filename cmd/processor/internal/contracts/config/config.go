@@ -47,7 +47,7 @@ var ConfigDefaultJSON = []byte(`
 		"VERSION": "1.0.0"
 	},
 	"KAFKA_CONFIG": {
-		"SEEDS": ["host.docker.internal:9093"],
+		"SEEDS": ["localhost:9093"],
 		"GROUP": "$Default",
 		"TOPIC": "cloudevents-core"
 	}

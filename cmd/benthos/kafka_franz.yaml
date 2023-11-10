@@ -4,6 +4,7 @@ input:
     topics: ["cloudevents-core"]
     regexp_topics: false
     consumer_group: "$Default"
+
     batching:
       count: 2
       period: 20s
@@ -25,6 +26,21 @@ pipeline:
 output:
   cloudevent_output: 
     grpc_url: "localhost:9050"
-    auth_type: "none"
-    user_name: "admin"
-    password: "password"
+    max_in_flight: 64
+    # auth[optional] one of: [oauth2,basic,apikey](ordered by priority)
+    #--------------------------------------------------------------------
+    #auth:
+    #  basic:
+    #    user_name: "admin"
+    #    password: "password"
+    #  oauth2:
+    #    client_id: "my_client_id"
+    #    client_secret: "secret"
+    #    token_endpoint: "https://example.com/oauth2/token"
+    #    scopes: ["scope1", "scope2"]
+    #  apikey:
+    #    name: "x-api-key"
+    #    value: "secret"
+
+
+    

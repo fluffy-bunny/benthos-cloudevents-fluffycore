@@ -24,12 +24,10 @@ type (
 	}
 	service struct {
 		// grpcUrl: i.e. grpc://localhost:5001
-		grpcUrl         string
-		oauth2config    *oauth2config
-		apiKeyConfig    *apiKeyConfig
-		basicAuthConfig *basicAuthConfig
-		// authType: none, oauth2, api_key, basic
-		authType                  string
+		grpcUrl                   string
+		oauth2config              *oauth2config
+		apiKeyConfig              *apiKeyConfig
+		basicAuthConfig           *basicAuthConfig
 		cloudEventProcessorClient proto_cloudeventprocessor.CloudEventProcessorClient
 	}
 )

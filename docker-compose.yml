@@ -50,6 +50,7 @@ services:
       - KAFKA_CLUSTERS_0_ZOOKEEPER=localhost:2181
     depends_on:
       - kafka
+      - create_topics
   # Zookeeper for Kafka
   zookeeper:
     extends:
