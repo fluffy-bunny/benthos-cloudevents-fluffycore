@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/benthosdev/benthos/v4/public/service"
-	cloudevents "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/proto/cloudevents"
+	proto_cloudevents "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/proto/cloudevents"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -53,14 +53,14 @@ func (g *gibberishInput) Connect(ctx context.Context) error {
 
 func (g *gibberishInput) Read(ctx context.Context) (*service.Message, service.AckFunc, error) {
 	//log := zerolog.Ctx(ctx).With().Str("input", "gibberish").Logger()
-	ceBatch := &cloudevents.CloudEventBatch{}
+	ceBatch := &proto_cloudevents.CloudEventBatch{}
 	for i := 0; i < g.length; i++ {
-		ce := &cloudevents.CloudEvent{
+		ce := &proto_cloudevents.CloudEvent{
 			Id:          uuid.New().String(),
 			Source:      "https://gibberish.com/cloudevent",
 			Type:        "CloudEvent",
 			SpecVersion: "1.0",
-			Data: &cloudevents.CloudEvent_TextData{
+			Data: &proto_cloudevents.CloudEvent_TextData{
 				TextData: `{"a":"b"}`,
 			},
 		}

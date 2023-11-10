@@ -4,8 +4,10 @@ import (
 	"context"
 	"testing"
 
+	proto_cloudevents "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/proto/cloudevents"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func TestGibberishInputConfigValidation(t *testing.T) {
@@ -44,8 +46,11 @@ func TestGibberishInput(t *testing.T) {
 
 	msgBytes, err := msg.AsBytes()
 	require.NoError(t, err)
+	ceBatch := &proto_cloudevents.CloudEventBatch{}
 
-	assert.Len(t, msgBytes, 10)
+	err = protojson.Unmarshal(msgBytes, ceBatch)
+	require.NoError(t, err)
+	assert.Len(t, ceBatch.Events, 10)
 	require.NoError(t, ackFn(context.Background(), nil))
 
 	assert.NoError(t, gibInput.Close(context.Background()))
