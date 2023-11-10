@@ -60,6 +60,8 @@ func CloudEventToKafkaMessage(ctx context.Context, ce *proto_cloudevents.CloudEv
 		timeStamp := attrib.GetCeTimestamp()
 		if timeStamp == nil {
 			e.SetTime(time.Now())
+		} else {
+			e.SetTime(timeStamp.AsTime())
 		}
 	}
 	for attribute, value := range ce.Attributes {

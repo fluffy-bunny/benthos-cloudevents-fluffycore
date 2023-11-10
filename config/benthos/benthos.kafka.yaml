@@ -1,0 +1,45 @@
+input:
+  kafka:
+    addresses: ["kafka:9092"]
+    topics: ["cloudevents-core"]
+    consumer_group: "$Default"
+
+    batching:
+      count: 2
+      period: 20s
+      processors:
+        - mapping: |
+            root.value = this
+            root.headers = @   
+        - archive:
+            format: json_array
+
+pipeline:
+  threads: 1
+  processors:
+  - sleep:
+      duration: 1s
+ 
+ 
+
+output:
+  cloudevent_output: 
+    grpc_url: "processor:9050"
+    max_in_flight: 64
+    # auth[optional] one of: [oauth2,basic,apikey](ordered by priority)
+    #--------------------------------------------------------------------
+    #auth:
+    #  basic:
+    #    user_name: "admin"
+    #    password: "password"
+    #  oauth2:
+    #    client_id: "my_client_id"
+    #    client_secret: "secret"
+    #    token_endpoint: "https://example.com/oauth2/token"
+    #    scopes: ["scope1", "scope2"]
+    #  apikey:
+    #    name: "x-api-key"
+    #    value: "secret"
+
+
+    

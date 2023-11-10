@@ -129,7 +129,7 @@ services:
       - zookeeper
       - kafka
     volumes:
-       - "./config/benthos/benthos.kafka_franz.yaml:/benthos.yaml"  
+       - "./config/benthos/benthos.kafka.yaml:/benthos.yaml"  
     networks:
       - benthos
     entrypoint: ["/app/benthos"]
