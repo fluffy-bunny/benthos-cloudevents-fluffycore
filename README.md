@@ -247,3 +247,49 @@ This service receives cloud-events as batches via out custom benthos output hand
 
 I use docker desktop and look at the logs.  My downstream processor just logs what it got and returns a nil.  
 
+## Benthos Notes
+
+Validating Data in the input.
+I want to write my custom output pluging to expect only perfect data.
+
+```
+input:
+  kafka:
+    addresses: ["kafka:9092"]
+    topics: ["cloudevents-core"]
+    consumer_group: "$Default"
+    batching:
+      count: 2
+      period: 20s
+      processors:
+        - mapping: |
+            root.value = this
+            root.headers = @   
+        - archive:
+            format: json_array
+```
+I expect a json, and to make this resilient I put not-json into a kafka message.
+I got the following errors from benthos(good)
+``` 
+level=error msg="failed assignment (line 1): unable to reference message as structured (with 'this'): message is empty" @service=benthos label="" path=root.input.batching.processors.0
+level=error msg="Failed to create archive: failed to parse message as JSON: target message part does not exist" @service=benthos label="" path=root.input.batching.processors.1
+```
+I imagine that I could do something in the input.processors to validate an individual message.  
+Upon NOT getting the headers and value I expect, I either eat it as handled or wrap it into a json that my output can now deal with and deadletter.   I think wrapping would be great.  If  root.value = this is bad, then turn it into {"crap":"encoded crap"}
+
+That way I can still get an  json array, but can evaluate each item looking for crap.
+
+On a side note I REALLY LIKE how y'all are handling errors.
+So my batch setting is 3.
+in kafka I have [crap]-[good]-[good]-[good]-[good]-[good]
+When benthos sees this it eats the [crap] and then sends the next 2 [good] one at a time.  
+I just need to code up that I may not get an array sometimes but may get the object instead.
+
+I then start getting arrays of 3.  
+NOICE!
+
+eats the [crap]  => as a result of 
+```
+level=error msg="failed assignment (line 2): unable to reference message as structured (with 'this'): parse as json: invalid character 'a' looking for beginning of value" @service=benthos label="" path=root.input.batching.processors.0
+
+```

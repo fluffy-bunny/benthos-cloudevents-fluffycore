@@ -3,14 +3,14 @@ input:
     addresses: ["kafka:9092"]
     topics: ["cloudevents-core"]
     consumer_group: "$Default"
-
     batching:
-      count: 2
+      count: 3
       period: 20s
       processors:
         - mapping: |
-            root.value = this
             root.headers = @   
+            root.value = this
+            
         - archive:
             format: json_array
 
