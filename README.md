@@ -113,6 +113,35 @@ The custom output gets messages via benthos in the following json format
     }
 ]
 ```
+## Downstream GRPC Handler
+
+[cloudeventprocessor proto](./pkg/protos/cloudeventprocessor/cloudeventprocessor.proto)  
+
+The ```cloudevent_output``` plugin processes and groups the messages into Good and Bad buckets and sends them both downstream.  It is an all of nothing acknowledgement from the downstream processor if the messages where handled.  Returning an error will result in the messages being sent again.  It is the responsiblity of the downstream processor to deal with bad data.  So putting bad data on a dead-letter queue is not something we will do here in benthos.
+
+Your downstream processor can have 4 types of authentication.  ```None, OAuth2, ApiKey or basic auth.```
+
+```yaml
+output:
+  cloudevent_output: 
+    grpc_url: "localhost:9050"
+    max_in_flight: 64
+
+    # auth[optional] one of: [oauth2,basic,apikey](ordered by priority)
+    #--------------------------------------------------------------------
+    #auth:
+    #  basic:
+    #    user_name: "admin"
+    #    password: "password"
+    #  oauth2:
+    #    client_id: "my_client_id"
+    #    client_secret: "secret"
+    #    token_endpoint: "https://example.com/oauth2/token"
+    #    scopes: ["scope1", "scope2"]
+    #  apikey:
+    #    name: "x-api-key"
+    #    value: "secret"
+```
 
 ## Build the proto
 
