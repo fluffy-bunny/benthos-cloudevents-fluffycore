@@ -64,15 +64,19 @@ This is service to submit a cloud-event to kafka.
                 "attributes": [
                     {
                         "value": {
-                            "ce_string": "test"
+                            "ce_string": "ORG1234abcd"
                         },
-                        "key": "testkey"
+                        "key": "orgid"
+                    },
+                    {
+                        "value": {
+                            "ce_string": "ORG1234abcd"
+                        },
+                        "key": "partition-key"
                     }
                 ],
                 "spec_version": "1.0",
-               
                 "text_data": "{\"a\":\"b\"}",
-                
                 "id": "1234",
                 "type": "my.type",
                 "source": "//my/source"
