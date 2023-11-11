@@ -45,7 +45,7 @@ CloudEvent Gets published to Kafka
 
 ### Benthos kafka batching
 
-Each batch item must retain its header and value in one json object.  I achieve this by doing a ```processors``` mapping which then gets packaged up as a json array.
+Each batch item must retain its headers and value in one json object.  I achieve this by doing a ```processors``` mapping which then gets packaged up as a json array.
 
 ```yaml
 input:
