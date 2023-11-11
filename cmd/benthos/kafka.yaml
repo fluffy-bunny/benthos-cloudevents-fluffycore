@@ -1,16 +1,15 @@
 input:
   kafka:
     addresses: ["localhost:9093"]
-    topic: "cloudevents-core"
-    multi_header: true
-    static_headers: {} # No default (optional)
-    metadata:
-      exclude_prefixes: []
-    max_in_flight: 64
+    topics: ["cloudevents-core"]
+    consumer_group: "$Default2"    
     batching:
       count: 2
       period: 20s
       processors:
+        - mapping: |
+            root.value = this
+            root.headers = @   
         - archive:
             format: json_array
             
@@ -25,6 +24,8 @@ pipeline:
 output:
   cloudevent_output: 
     grpc_url: "localhost:9050"
+    max_in_flight: 64
+
     # auth[optional] one of: [oauth2,basic,apikey](ordered by priority)
     #--------------------------------------------------------------------
     #auth:

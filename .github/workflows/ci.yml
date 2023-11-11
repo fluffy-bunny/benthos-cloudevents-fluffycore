@@ -10,6 +10,8 @@ on:
       - '**.md'
       - 'docs/**'
       - '.vscode/**'
+      - 'cmd/**.yaml'
+      - 'config/**.yaml'
       - '.github/dependabot.yml'
       - '.env'
       - 'docker-compose.yml'
