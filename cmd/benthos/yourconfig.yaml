@@ -1,0 +1,18 @@
+input:
+  gibberish:
+    length: 2
+
+pipeline:
+  threads: 1
+  processors:
+  - sleep:
+      duration: 1s
+ 
+ 
+
+output:
+  cloudevent_output: 
+    grpc_url: "localhost:50051"
+    auth_type: "none"
+    user_name: "admin"
+    password: "password"

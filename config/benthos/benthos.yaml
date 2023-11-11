@@ -1,0 +1,29 @@
+input:
+  gibberish:
+    length: 2
+
+pipeline:
+  threads: 1
+  processors:
+  - sleep:
+      duration: 1s
+ 
+ 
+
+output:
+  cloudevent_output: 
+    grpc_url: "processor:9050"
+    # auth[optional] one of: [oauth2,basic,apikey](ordered by priority)
+    #--------------------------------------------------------------------
+    #auth:
+    #  basic:
+    #    user_name: "admin"
+    #    password: "password"
+    #  oauth2:
+    #    client_id: "my_client_id"
+    #    client_secret: "secret"
+    #    token_endpoint: "https://example.com/oauth2/token"
+    #    scopes: ["scope1", "scope2"]
+    #  apikey:
+    #    name: "x-api-key"
+    #    value: "secret"
