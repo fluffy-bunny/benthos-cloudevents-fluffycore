@@ -1,6 +1,118 @@
 # benthos-cloudevents-fluffycore
 
-Benthos plugin that processes cloudevents and sends them downstream to a gprc handler.  
+A [Benthos](https://www.benthos.dev/) plugin that processes cloudevents and sends them downstream to a gprc handler.  
+
+## CloudEvents
+
+[CloudEvents Specification](https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md)  
+
+## Pipeline
+
+CloudEvent Gets published to Kafka
+### CloudEvent
+
+```json
+{
+    "id": "1234",
+    "spec_version": "1.0",
+    "type": "my.type",
+    "source": "//my/source",
+    "text_data": "{\"a\":\"b\"}",
+    "attributes": [
+        {
+            "value": {
+                "ce_string": "ORG1234abcd"
+            },
+            "key": "orgid"
+        },
+        {
+            "value": {
+                "ce_string": "ORG1234abcd"
+            },
+            "key": "partition-key"
+        }
+    ]
+}
+```
+### CloudEvents in Kafka
+
+| Kafka Part | data         |
+| ---        | ---          |
+| Key        | ORG1234abcd  |
+| Headers    | <pre>{<br>  "ce_type":"my.type",<br>  "ce_orgid":"ORG1234abcd",<br>  "ce_source":"//my/source",<br>  "ce_specversion":"1.0","ce_time":"2023-11-11T14:57:14.594525315Z",<br>  "ce_id":"1234",<br>  "content-type":"application/json"<br>}</pre>|
+| Value   | <pre>{<br>  "a":"b"<br>}</pre>|
+
+
+### Benthos kafka batching
+
+Each batch item must retain its header and value in one json object.  I achieve this by doing a ```processors``` mapping which then gets packaged up as a json array.
+
+```yaml
+input:
+  kafka:
+    addresses: ["kafka:9092"]
+    topics: ["cloudevents-core"]
+    consumer_group: "$Default"
+
+    batching:
+      count: 2
+      period: 20s
+      processors:
+        - mapping: |
+            root.value = this
+            root.headers = @   
+        - archive:
+            format: json_array
+```
+
+The custom output gets messages via benthos in the following json format
+
+```json
+[
+    {
+        "headers": {
+            "ce_id": "1234",
+            "ce_orgid": "ORG1234abcd",
+            "ce_source": "//my/source",
+            "ce_specversion": "1.0",
+            "ce_time": "2023-11-11T14:57:14.594525315Z",
+            "ce_type": "my.type",
+            "content-type": "application/json",
+            "kafka_key": "ORG1234abcd",
+            "kafka_lag": 1,
+            "kafka_offset": 0,
+            "kafka_partition": 0,
+            "kafka_timestamp_unix": 1699714634,
+            "kafka_tombstone_message": false,
+            "kafka_topic": "cloudevents-core"
+        },
+        "value": {
+            "a": "b"
+        }
+    },
+    {
+        "headers": {
+            "ce_id": "1234",
+            "ce_orgid": "ORG1234abcd",
+            "ce_source": "//my/source",
+            "ce_specversion": "1.0",
+            "ce_time": "2023-11-11T15:34:48.621943865Z",
+            "ce_type": "my.type",
+            "content-type": "application/json",
+            "kafka_key": "ORG1234abcd",
+            "kafka_lag": 0,
+            "kafka_offset": 1,
+            "kafka_partition": 0,
+            "kafka_timestamp_unix": 1699716888,
+            "kafka_tombstone_message": false,
+            "kafka_topic": "cloudevents-core"
+        },
+        "value": {
+            "a": "b"
+        }
+    }
+]
+```
 
 ## Build the proto
 
