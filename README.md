@@ -115,7 +115,7 @@ The custom output gets messages via benthos in the following json format
 ```
 ## Downstream GRPC Handler
 
-[cloudeventprocessor proto](./pkg/protos/cloudeventprocessor/cloudeventprocessor.proto)  
+[cloudeventprocessor proto](./pkg/proto/cloudeventprocessor/cloudeventprocessor.proto)  
 
 The ```cloudevent_output``` plugin processes and groups the messages into Good and Bad buckets and sends them both downstream.  It is an all of nothing acknowledgement from the downstream processor if the messages where handled.  Returning an error will result in the messages being sent again.  It is the responsiblity of the downstream processor to deal with bad data.  So putting bad data on a dead-letter queue is not something we will do here in benthos.
 
