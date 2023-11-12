@@ -7,12 +7,8 @@ input:
       count: 3
       period: 20s
       processors:
-        - mapping: |
-            root.headers = @   
-            root.value = this
-            
         - archive:
-            format: json_array
+            format: binary
 
 pipeline:
   threads: 1
