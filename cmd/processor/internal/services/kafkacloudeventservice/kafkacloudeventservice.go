@@ -14,6 +14,7 @@ import (
 	kgo "github.com/twmb/franz-go/pkg/kgo"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type (
@@ -27,10 +28,11 @@ type (
 func AddKafkaCloudEventServiceServer(builder di.ContainerBuilder) {
 	proto_kafkacloudevent.AddKafkaCloudEventServiceServer[proto_kafkacloudevent.IKafkaCloudEventServiceServer](builder,
 		func(config *contracts_config.Config, kafkaClient *kgo.Client) (proto_kafkacloudevent.IKafkaCloudEventServiceServer, error) {
-			return &service{
+			s := &service{
 				config:      config,
 				KafkaClient: kafkaClient,
-			}, nil
+			}
+			return s, nil
 		})
 }
 
@@ -62,10 +64,25 @@ func (s *service) SubmitCloudEvents(ctx context.Context, request *proto_kafkaclo
 		return nil, err
 	}
 	for _, event := range request.Batch.Events {
-		record, err := kafka_franz.CloudEventToKafkaMessage(ctx, event)
-		if err != nil {
-			log.Error().Err(err).Msg("failed to convert CloudEvent to KafkaMessage")
-			return nil, err
+		var record *kgo.Record
+
+		if s.config.CloudEventToKafkaMode == "kafka-headers-value" {
+			record, err = kafka_franz.CloudEventToKafkaMessage(ctx, event)
+			if err != nil {
+				log.Error().Err(err).Msg("failed to convert CloudEvent to KafkaMessage")
+				return nil, err
+			}
+		} else {
+			opts := &protojson.MarshalOptions{Multiline: false, EmitUnpopulated: false}
+			msgJSON, err := opts.Marshal(event)
+			if err != nil {
+				log.Error().Err(err).Msg("failed to convert CloudEvent to KafkaMessage")
+				return nil, err
+			}
+
+			record = &kgo.Record{
+				Value: []byte(msgJSON),
+			}
 		}
 		record.Topic = s.config.KafkaConfig.Topic
 
@@ -75,6 +92,7 @@ func (s *service) SubmitCloudEvents(ctx context.Context, request *proto_kafkaclo
 		if keyHint != nil {
 			keyHintS := keyHint.GetCeString()
 			record.Key = []byte(keyHintS)
+			delete(event.Attributes, "partition-key")
 		}
 		s.KafkaClient.Produce(ctx, record, func(_ *kgo.Record, err error) {
 			defer wg.Done()

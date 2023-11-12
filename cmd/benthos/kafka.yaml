@@ -3,15 +3,13 @@ input:
     addresses: ["localhost:9093"]
     topics: ["cloudevents-core"]
     consumer_group: "$Default2"    
+    multi_header: true
     batching:
-      count: 2
+      count: 3
       period: 20s
       processors:
-        - mapping: |
-            root.value = this
-            root.headers = @   
         - archive:
-            format: json_array
+            format: binary
             
 pipeline:
   threads: 1
