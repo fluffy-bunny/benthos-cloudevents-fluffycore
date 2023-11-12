@@ -6,17 +6,29 @@ import (
 	"time"
 
 	benthos_service "github.com/benthosdev/benthos/v4/public/service"
+	benthos_message "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/benthos/message"
 	proto_cloudeventprocessor "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/proto/cloudeventprocessor"
 	proto_cloudevents "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/proto/cloudevents"
+
 	status "github.com/gogo/status"
 	log "github.com/rs/zerolog/log"
 	codes "google.golang.org/grpc/codes"
+	"google.golang.org/protobuf/encoding/protojson"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type kafkaPayload struct {
 	Headers map[string]interface{} `json:"headers"`
 	Value   map[string]interface{} `json:"value"`
+}
+
+func (s *service) ItemToCloudEvent2(ctx context.Context, bytes *[]byte) (*proto_cloudevents.CloudEvent, error) {
+	ce := &proto_cloudevents.CloudEvent{}
+	err := protojson.Unmarshal(*bytes, ce)
+	if err != nil {
+		return nil, err
+	}
+	return ce, nil
 }
 
 func (s *service) ItemToCloudEvent(ctx context.Context, item map[string]interface{}) (*proto_cloudevents.CloudEvent, error) {
@@ -140,46 +152,39 @@ func (s *service) ItemToCloudEvent(ctx context.Context, item map[string]interfac
 func (s *service) Write(ctx context.Context, message *benthos_service.Message) error {
 	content, err := message.AsBytes()
 	if err != nil {
-		log.Warn().Err(err).Msg("failed to convert message to bytes, don't want it anyway if that happens")
+		log.Warn().Err(err).Msg("failed to convert message to AsBytes, don't want it anyway if that happens")
 		return nil
 	}
 	if len(content) == 0 {
 		log.Warn().Msg("empty message, don't want it anyway if that happens")
 		return nil
 	}
+	parts, err := benthos_message.DeserializeBytes(content)
+	if err != nil {
+		log.Warn().Err(err).Msg("failed to DeserializeBytes, don't want it anyway if that happens")
+		return nil
+	}
 	processRequest := &proto_cloudeventprocessor.ProcessCloudEventsRequest{}
 
-	generic := []map[string]interface{}{}
-	err = json.Unmarshal(content, &generic)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to unmarshal generic")
-		processRequest.BadBatch = &proto_cloudeventprocessor.ByteBatch{
-			Messages: [][]byte{content},
-		}
-		_, err = s.cloudEventProcessorClient.ProcessCloudEvents(ctx, processRequest)
-		return err
-	}
-	log.Info().Interface("generic", generic).Msg("generic")
-
 	ceBatch := &proto_cloudevents.CloudEventBatch{}
-	badBatch := [][]byte{}
-	for _, item := range generic {
-		ce, err := s.ItemToCloudEvent(ctx, item)
+	badParts := [][]byte{}
+	for _, part := range parts {
+		// must be a json object
+		ce, err := s.ItemToCloudEvent2(ctx, &part)
 		if err != nil {
-			badItem, _ := json.Marshal(item)
-			badBatch = append(badBatch, badItem)
-			log.Error().Err(err).Msg("failed to ItemToCloudEvent")
+			badParts = append(badParts, part)
 			continue
 		}
 		ceBatch.Events = append(ceBatch.Events, ce)
-	}
-	if len(badBatch) > 0 {
-		processRequest.BadBatch = &proto_cloudeventprocessor.ByteBatch{
-			Messages: badBatch,
-		}
+
 	}
 	if len(ceBatch.Events) > 0 {
 		processRequest.Batch = ceBatch
+	}
+	if len(badParts) > 0 {
+		processRequest.BadBatch = &proto_cloudeventprocessor.ByteBatch{
+			Messages: badParts,
+		}
 	}
 	log.Info().Interface("ceBatch", ceBatch).Msg("ceBatch")
 	_, err = s.cloudEventProcessorClient.ProcessCloudEvents(ctx, &proto_cloudeventprocessor.ProcessCloudEventsRequest{
