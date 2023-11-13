@@ -35,11 +35,17 @@ type CloudEvent struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Required Attributes
-	Id          string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Source      string `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"` // URI-reference
+	// ---------------------------------------------------------------------
+	// Unique event identifier.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// URI of the event source.
+	Source string `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
+	// Version of the spec in use.
 	SpecVersion string `protobuf:"bytes,3,opt,name=spec_version,json=specVersion,proto3" json:"spec_version,omitempty"`
-	Type        string `protobuf:"bytes,4,opt,name=type,proto3" json:"type,omitempty"`
+	// Event type identifier.
+	Type string `protobuf:"bytes,4,opt,name=type,proto3" json:"type,omitempty"`
 	// Optional & Extension Attributes
+	// ---------------------------------------------------------------------
 	Attributes map[string]*CloudEvent_CloudEventAttributeValue `protobuf:"bytes,5,rep,name=attributes,proto3" json:"attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// -- CloudEvent Data (Bytes, Text, or Proto)
 	//
@@ -151,14 +157,22 @@ type isCloudEvent_Data interface {
 }
 
 type CloudEvent_BinaryData struct {
+	// If the event is binary data then the datacontenttype attribute
+	// should be set to an appropriate media-type.
 	BinaryData []byte `protobuf:"bytes,6,opt,name=binary_data,json=binaryData,proto3,oneof"`
 }
 
 type CloudEvent_TextData struct {
+	// If the event is string data then the datacontenttype attribute
+	// should be set to an appropriate media-type such as application/json.
 	TextData string `protobuf:"bytes,7,opt,name=text_data,json=textData,proto3,oneof"`
 }
 
 type CloudEvent_ProtoData struct {
+	// If the event is a protobuf then it must be encoded using this Any
+	// type. The datacontenttype attribute should be set to
+	// application/protobuf and the dataschema attribute set to the message
+	// type.
 	ProtoData *anypb.Any `protobuf:"bytes,8,opt,name=proto_data,json=protoData,proto3,oneof"`
 }
 
