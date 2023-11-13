@@ -20,7 +20,7 @@ pipeline:
  
 
 output:
-  cloudevents: 
+  cloudevents_grpc: 
     grpc_url: "localhost:9050"
     max_in_flight: 64
 
