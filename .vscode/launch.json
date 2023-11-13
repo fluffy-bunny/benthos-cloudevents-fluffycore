@@ -68,5 +68,20 @@
             },
             "args": [ "-c", "./kafka.yaml" ]      
         },
+        {
+            "name": "benthos-request-Units",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/benthos",
+            "env": {
+                "APPLICATION_NAME": "processor",
+                "APPLICATION_ENVIRONMENT":"Development",
+                "LOG_LEVEL": "debug",     
+                
+
+            },
+            "args": [ "-c", "./kafka-request-units.yaml" ]      
+        },
     ]
 }

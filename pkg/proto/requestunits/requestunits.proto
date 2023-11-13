@@ -1,0 +1,44 @@
+// Copyright 2015 gRPC authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+
+option go_package = "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/proto/requestunits;requestunits";
+option java_multiple_files = true;
+option java_package = "com.fluffybunny.benthos.requestunits";
+option java_outer_classname = "requestunits";
+option csharp_namespace = "FluffyBunny.Benthos.requestunits";
+
+package pkg.proto.requestunits;
+
+import "pkg/proto/cloudevents/cloudevents.proto";
+ 
+// The greeting service definition.
+service requestunits {
+  // Processes a batch of cloud events.  This is an all or nothing operation.  If any of the events fail to process, then the entire batch is considered a failure.
+  rpc CreateRequestUnit (CreateRequestUnitRequest) returns (CreateRequestUnitResponse) {}
+}
+
+message RequestUnit {
+  io.cloudevents.v1.CloudEventMetaData meta_data = 1;
+  int32 request_units = 2;
+}
+message CreateRequestUnitRequest {
+    repeated RequestUnit request_units = 1;
+}
+message CreateRequestUnitResponse {}
+
+
+ 

@@ -1,0 +1,47 @@
+input:
+  kafka:
+    addresses: ["localhost:9093"]
+    topics: ["cloudevents-core"]
+    consumer_group: "$Default2"    
+
+
+            
+pipeline:
+  threads: 1
+  processors:
+      - json_schema:
+          schema_path: "file://C:/work/mapped/benthos-cloudevents-fluffycore/request_units_schema.json"
+      - catch:
+        - log:
+            level: ERROR
+            message: "Schema validation failed due to: ${!error()}"
+        - mapping: 'root = deleted()' # Drop messages that fail
+
+      - bloblang: |
+          root.requestUnits = json("textData").parse_json()
+          root.id = this.id
+      - catch:
+        - log:
+            level: ERROR
+            message: "textData is not a valid json: ${!error()}"
+        - mapping: 'root = deleted()' # Drop messages that fail
+      - log:
+            level: INFO
+            message: root
+            fields_mapping: |-
+              root = this
+        
+ 
+
+output:
+  label: "test"
+  mongodb:
+    url: mongodb://localhost:27017 # No default (required)
+    database: "benthos"
+    collection: "requestunits" # No default (required)
+    document_map: |
+       {"$set": {"id": this.id, "requestUnits": this.requestUnits}}
+    filter_map: |
+      root._id = this.id
+    operation: update-one
+    upsert: true
