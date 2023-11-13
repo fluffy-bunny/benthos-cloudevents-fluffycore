@@ -11,7 +11,7 @@ pipeline:
  
 
 output:
-  cloudevent_output: 
+  cloudevents: 
     grpc_url: "localhost:50051"
     auth_type: "none"
     user_name: "admin"

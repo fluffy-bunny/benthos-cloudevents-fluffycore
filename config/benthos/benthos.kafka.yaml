@@ -19,7 +19,7 @@ pipeline:
  
 
 output:
-  cloudevent_output: 
+  cloudevents: 
     grpc_url: "processor:9050"
     max_in_flight: 64
     # auth[optional] one of: [oauth2,basic,apikey](ordered by priority)

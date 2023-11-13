@@ -41,7 +41,7 @@ func NewAuthConfig() *benthos_service.ConfigField {
 }
 
 func (s *service) Register() error {
-	benthos_service.RegisterOutput("cloudevent_output",
+	benthos_service.RegisterOutput("cloudevents",
 		configSpec, func(conf *benthos_service.ParsedConfig, mgr *benthos_service.Resources) (out benthos_service.Output, maxInFlight int, err error) {
 			grpcUrl, err := conf.FieldString("grpc_url")
 			if err != nil {

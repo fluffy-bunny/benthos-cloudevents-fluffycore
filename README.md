@@ -8,7 +8,14 @@ A [Benthos](https://www.benthos.dev/) plugin that processes cloudevents and send
 
 ## Pipeline
 
-CloudEvent Gets published to Kafka
+```mermaid
+graph TD;
+    cloud_event_producer-->Kafka;
+    Kafka-->Benthos.Input.kafka;
+    Benthos.Input.kafka-->Benthos.Ouput.cloudevents;
+    Benthos.Ouput.cloudevents-->Downstream.GRPC.Service;
+```
+
 ### CloudEvent
 
 ```json
@@ -117,13 +124,13 @@ The custom output gets messages via benthos in the following json format
 
 [cloudeventprocessor proto](./pkg/proto/cloudeventprocessor/cloudeventprocessor.proto)  
 
-The ```cloudevent_output``` plugin processes and groups the messages into Good and Bad buckets and sends them both downstream.  It is an all of nothing acknowledgement from the downstream processor if the messages where handled.  Returning an error will result in the messages being sent again.  It is the responsiblity of the downstream processor to deal with bad data.  So putting bad data on a dead-letter queue is not something we will do here in benthos.
+The ```cloudevents``` plugin processes and groups the messages into Good and Bad buckets and sends them both downstream.  It is an all of nothing acknowledgement from the downstream processor if the messages where handled.  Returning an error will result in the messages being sent again.  It is the responsiblity of the downstream processor to deal with bad data.  So putting bad data on a dead-letter queue is not something we will do here in benthos.
 
 Your downstream processor can have 4 types of authentication.  ```None, OAuth2, ApiKey or basic auth.```
 
 ```yaml
 output:
-  cloudevent_output: 
+  cloudevents: 
     grpc_url: "localhost:9050"
     max_in_flight: 64
 
