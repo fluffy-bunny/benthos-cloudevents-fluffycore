@@ -156,8 +156,8 @@ github.com/felixge/httpsnoop v1.0.3 h1:s/nj+GCswXYzN5v2DpNMuMQYe+0DDwt5WVCU6CWBd
 github.com/felixge/httpsnoop v1.0.3/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
 github.com/fluffy-bunny/fluffy-dozm-di v0.0.1 h1:b+F9b4edbSVn9Oio4efo62QJNspVsdmhp1KO3dxVoNQ=
 github.com/fluffy-bunny/fluffy-dozm-di v0.0.1/go.mod h1:4/ZqTQ4Nwzq54c1i42mvEOabnMBJHDruBb2817viqKk=
-github.com/fluffy-bunny/fluffycore v1.0.35 h1:/xQPK3tWpNjw5cM129wvQIXhFUWnvo6bAMx/rN0tzwE=
-github.com/fluffy-bunny/fluffycore v1.0.35/go.mod h1:ZxbPANL6C3mkdbuqT3APluO/57jZ3r76Gujdg0Uyimc=
+github.com/fluffy-bunny/fluffycore v1.0.36 h1:mEsya6cdNMo9tlBJUuEe3yR6c5O+Lrj8M+IXktDnqVI=
+github.com/fluffy-bunny/fluffycore v1.0.36/go.mod h1:O2a5I34FNCoA3TjTuu3pCsm2i3f5K3GDPShyg7mZF0Q=
 github.com/fluffy-bunny/viperEx v0.0.27 h1:wm7cjbvwmXxlOxdAfxeToAmGDK0mt2Qcec+Xr9Tcrx4=
 github.com/fluffy-bunny/viperEx v0.0.27/go.mod h1:yvFX7/+PN4rEr+cZC4lb7CegtzGahZjzUcTBxwQ2THM=
 github.com/form3tech-oss/jwt-go v3.2.5+incompatible h1:/l4kBbb4/vGSsdtB5nUe8L7B9mImVMaBPw9L/0TBHU8=
@@ -466,8 +466,8 @@ github.com/quipo/dependencysolver v0.0.0-20170801134659-2b009cb4ddcc h1:hK577yxE
 github.com/quipo/dependencysolver v0.0.0-20170801134659-2b009cb4ddcc/go.mod h1:OQt6Zo5B3Zs+C49xul8kcHo+fZ1mCLPvd0LFxiZ2DHc=
 github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 h1:N/ElC8H3+5XpJzTSTfLsJV/mx9Q9g7kxmchpfZyxgzM=
 github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
-github.com/reugn/async v0.6.0 h1:ZjJC/ocVG3kblSYzBz6fEQxZzz0y99PjokKgnaainuA=
-github.com/reugn/async v0.6.0/go.mod h1:dqC0G1/FB/rdagox5H6kapz4ZxbuEDMQBGeH1V63DEA=
+github.com/reugn/async v0.7.0 h1:Me9X9a9zhvYRnCgy4qaYF2yQC8gnSvCZ/K5QCUwNd9Y=
+github.com/reugn/async v0.7.0/go.mod h1:DeWMb1afOLRJjetJq+gVVII9jD3njyndoLbfpj9pr0M=
 github.com/richardartoul/molecule v1.0.1-0.20221107223329-32cfee06a052 h1:Qp27Idfgi6ACvFQat5+VJvlYToylpM/hcyLBI3WaKPA=
 github.com/richardartoul/molecule v1.0.1-0.20221107223329-32cfee06a052/go.mod h1:uvX/8buq8uVeiZiFht+0lqSLBHF+uGV8BrTv8W/SIwk=
 github.com/rickb777/date v1.20.5 h1:Ybjz7J7ga9ui4VJizQpil0l330r6wkn6CicaoattIxQ=
