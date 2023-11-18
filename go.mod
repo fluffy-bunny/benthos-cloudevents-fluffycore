@@ -8,7 +8,7 @@ require (
 	github.com/benthosdev/benthos/v4 v4.23.0
 	github.com/cloudevents/sdk-go/v2 v2.14.0
 	github.com/fluffy-bunny/fluffy-dozm-di v0.0.1
-	github.com/fluffy-bunny/fluffycore v1.0.35
+	github.com/fluffy-bunny/fluffycore v1.0.36
 	github.com/gogo/status v1.1.1
 	github.com/google/uuid v1.4.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
@@ -124,7 +124,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/quipo/dependencysolver v0.0.0-20170801134659-2b009cb4ddcc // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
-	github.com/reugn/async v0.6.0 // indirect
+	github.com/reugn/async v0.7.0 // indirect
 	github.com/richardartoul/molecule v1.0.1-0.20221107223329-32cfee06a052 // indirect
 	github.com/rickb777/date v1.20.5 // indirect
 	github.com/rickb777/plural v1.4.1 // indirect
