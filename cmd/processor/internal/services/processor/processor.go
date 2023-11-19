@@ -2,13 +2,14 @@ package processor
 
 import (
 	"context"
-	"encoding/json"
+	"sync"
 
 	contracts_config "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/contracts/config"
 	contracts_kafkaclient "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/contracts/kafkaclient"
 	proto_cloudeventprocessor "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/proto/cloudeventprocessor"
 	di "github.com/fluffy-bunny/fluffy-dozm-di"
 	zerolog "github.com/rs/zerolog"
+	kgo "github.com/twmb/franz-go/pkg/kgo"
 )
 
 type (
@@ -49,17 +50,22 @@ func (s *service) processBadBatch(ctx context.Context, request *proto_cloudevent
 	if request.BadBatch == nil {
 		return &proto_cloudeventprocessor.ProcessCloudEventsResponse{}, nil
 	}
-	generics := []map[string]interface{}{}
 	for _, item := range request.BadBatch.Messages {
-		generic := make(map[string]interface{})
-		err := json.Unmarshal(item, &generic)
-		if err != nil {
-			log.Error().Err(err).Msg("failed to unmarshal generic")
-			continue
+		var wg sync.WaitGroup
+		wg.Add(1)
+		record := &kgo.Record{
+			Value: item,
 		}
-		generics = append(generics, generic)
+		kafkaClient := s.deadLetterClient.GetClient()
+
+		kafkaClient.Produce(ctx, record, func(_ *kgo.Record, err error) {
+			defer wg.Done()
+			if err != nil {
+				log.Error().Err(err).Msg("failed to produce")
+			}
+		})
+		wg.Wait()
 	}
-	log.Info().Interface("generics", generics).Msg("processBadBatch")
 
 	return &proto_cloudeventprocessor.ProcessCloudEventsResponse{}, nil
 
