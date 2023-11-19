@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	contracts_config "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/contracts/config"
+	contracts_kafkaclient "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/contracts/kafkaclient"
 	proto_cloudeventprocessor "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/proto/cloudeventprocessor"
 	di "github.com/fluffy-bunny/fluffy-dozm-di"
 	zerolog "github.com/rs/zerolog"
@@ -13,15 +14,17 @@ import (
 type (
 	service struct {
 		proto_cloudeventprocessor.UnimplementedCloudEventProcessorServer
-		config *contracts_config.Config
+		config           *contracts_config.Config
+		deadLetterClient contracts_kafkaclient.IDeadLetterClient
 	}
 )
 
 func AddCloudEventProcessorServer(builder di.ContainerBuilder) {
 	proto_cloudeventprocessor.AddCloudEventProcessorServer[proto_cloudeventprocessor.ICloudEventProcessorServer](builder,
-		func(config *contracts_config.Config) proto_cloudeventprocessor.ICloudEventProcessorServer {
+		func(config *contracts_config.Config, deadLetterClient contracts_kafkaclient.IDeadLetterClient) proto_cloudeventprocessor.ICloudEventProcessorServer {
 			return &service{
-				config: config,
+				config:           config,
+				deadLetterClient: deadLetterClient,
 			}
 		})
 }
