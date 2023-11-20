@@ -13,6 +13,8 @@ import (
 	_ "github.com/benthosdev/benthos/v4/public/components/io"
 	_ "github.com/benthosdev/benthos/v4/public/components/pure"
 
+	_ "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/bloblang"
+
 	// In order to import _all_ Benthos components for third party services
 	// uncomment the following line:
 	//_ "github.com/benthosdev/benthos/v4/public/components/all"

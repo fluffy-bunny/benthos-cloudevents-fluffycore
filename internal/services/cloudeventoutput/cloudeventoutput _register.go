@@ -101,35 +101,37 @@ func (s *service) Register() error {
 					Key:         key,
 				}, nil
 			}
-			kfdlConfig, err := loadBasicDeadLetterConfig()
-			if err != nil {
-				return nil, 0, err
-			}
-			if kfdlConfig != nil {
-				s.kafkaFranzDeadLetter = kfdlConfig
-				// next get the SASL config
-				kafkaFranzDeadLetterConfig, err := conf.FieldAnyMap("kafka_franz_dead_letter")
-				if err == nil {
-					pc, ok := kafkaFranzDeadLetterConfig["sasl"]
-					if ok {
-						mechanism, err := pc.FieldString("mechanism")
-						if err != nil {
-							return nil, 0, err
+			if conf.Contains("kafka_franz_dead_letter") {
+				kfdlConfig, err := loadBasicDeadLetterConfig()
+				if err != nil {
+					return nil, 0, err
+				}
+				if kfdlConfig != nil {
+					s.kafkaFranzDeadLetter = kfdlConfig
+					// next get the SASL config
+					kafkaFranzDeadLetterConfig, err := conf.FieldAnyMap("kafka_franz_dead_letter")
+					if err == nil {
+						pc, ok := kafkaFranzDeadLetterConfig["sasl"]
+						if ok {
+							mechanism, err := pc.FieldString("mechanism")
+							if err != nil {
+								return nil, 0, err
+							}
+							username, err := pc.FieldString("username")
+							if err != nil {
+								return nil, 0, err
+							}
+							password, err := pc.FieldString("password")
+							if err != nil {
+								return nil, 0, err
+							}
+							saslConfig := &SASLConfig{
+								Mechanism: mechanism,
+								Username:  username,
+								Password:  password,
+							}
+							kfdlConfig.SASL = saslConfig
 						}
-						username, err := pc.FieldString("username")
-						if err != nil {
-							return nil, 0, err
-						}
-						password, err := pc.FieldString("password")
-						if err != nil {
-							return nil, 0, err
-						}
-						saslConfig := &SASLConfig{
-							Mechanism: mechanism,
-							Username:  username,
-							Password:  password,
-						}
-						kfdlConfig.SASL = saslConfig
 					}
 				}
 			}

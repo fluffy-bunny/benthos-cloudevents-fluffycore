@@ -5,9 +5,25 @@ input:
     consumer_group: "$Default2"    
     multi_header: true
     batching:
-      count: 3
+      count: 1
       period: 20s
       processors:
+        - json_schema:
+            schema_path: "file://C:/work/mapped/benthos-cloudevents-fluffycore/request_units_schema.json"
+        - switch:
+            - check: errored()
+              processors:
+                - for_each:
+                  - while:
+                      at_least_once: true
+                      max_loops: 0
+                      check: errored()
+                      processors:
+                        - catch: [] # Wipe any previous error
+                        - mapping: 'wrap(@,content())'
+                - mapping: |
+                    deleted()
+                    
         - archive:
             format: binary
             
@@ -23,9 +39,9 @@ output:
   cloudevents_grpc: 
     grpc_url: "localhost:9050"
     max_in_flight: 64
-    kafka_franz_dead_letter:
-      seed_brokers: ["localhost:9093"]
-      topic: "cloudevents-core-deadletter"
+    #kafka_franz_dead_letter:
+    #  seed_brokers: ["localhost:9093"]
+    #  topic: "cloudevents-core-deadletter"
      
     # auth[optional] one of: [oauth2,basic,apikey](ordered by priority)
     #--------------------------------------------------------------------
