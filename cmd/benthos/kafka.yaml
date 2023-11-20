@@ -5,7 +5,7 @@ input:
     consumer_group: "$Default2"    
     multi_header: true
     batching:
-      count: 1
+      count: 3
       period: 20s
       processors:
         - json_schema:
@@ -20,7 +20,7 @@ input:
                       check: errored()
                       processors:
                         - catch: [] # Wipe any previous error
-                        - mapping: 'wrap(@,content())'
+                        - mapping: 'deadletterit(@,content())'
                 - mapping: |
                     deleted()
                     

@@ -2,14 +2,9 @@ package cloudeventoutput
 
 import (
 	"context"
-	"crypto/tls"
-	"net"
-	"time"
 
 	proto_cloudeventprocessor "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/proto/cloudeventprocessor"
 	log "github.com/rs/zerolog/log"
-	kgo "github.com/twmb/franz-go/pkg/kgo"
-	plain "github.com/twmb/franz-go/pkg/sasl/plain"
 	cc "golang.org/x/oauth2/clientcredentials"
 	grpc "google.golang.org/grpc"
 	insecure "google.golang.org/grpc/credentials/insecure"
@@ -79,29 +74,5 @@ func (s *service) Connect(ctx context.Context) error {
 
 	s.cloudEventProcessorClient = proto_cloudeventprocessor.NewCloudEventProcessorClient(conn)
 
-	if s.kafkaFranzDeadLetter != nil {
-		// TODO do sasl
-		opts := []kgo.Opt{
-			kgo.SeedBrokers(s.kafkaFranzDeadLetter.SeedBrokers...),
-			kgo.ConsumeTopics(s.kafkaFranzDeadLetter.Topic),
-		}
-		if s.kafkaFranzDeadLetter.SASL != nil {
-			saslOpt := kgo.SASL(plain.Auth{
-				User: s.kafkaFranzDeadLetter.SASL.Username,
-				Pass: s.kafkaFranzDeadLetter.SASL.Password,
-			}.AsMechanism())
-			opts = append(opts, saslOpt)
-			tlsDialer := &tls.Dialer{NetDialer: &net.Dialer{Timeout: 10 * time.Second}}
-			tlsOpt := kgo.Dialer(tlsDialer.DialContext)
-			opts = append(opts, tlsOpt)
-		}
-		cl, err := kgo.NewClient(
-			opts...,
-		)
-		if err != nil {
-			return err
-		}
-		s.deadLetterClient = cl
-	}
 	return nil
 }

@@ -3,9 +3,9 @@ package cloudeventoutput
 import (
 	contracts_benthos "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/benthos"
 	contracts_cloudeventoutput "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/cloudeventoutput"
+	contracts_kafkaclient "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/kafkaclient"
 	proto_cloudeventprocessor "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/proto/cloudeventprocessor"
 	di "github.com/fluffy-bunny/fluffy-dozm-di"
-	kgo "github.com/twmb/franz-go/pkg/kgo"
 )
 
 type (
@@ -30,15 +30,16 @@ type (
 		apiKeyConfig              *apiKeyConfig
 		basicAuthConfig           *basicAuthConfig
 		cloudEventProcessorClient proto_cloudeventprocessor.CloudEventProcessorClient
-		kafkaFranzDeadLetter      *kafkaFranzDeadLetterConfig
-		deadLetterClient          *kgo.Client
+		deadLetterClient          contracts_kafkaclient.IDeadLetterClient
 	}
 )
 
 var stemService = &service{}
 
-func (s *service) Ctor() *service {
-	return &service{}
+func (s *service) Ctor(deadLetterClient contracts_kafkaclient.IDeadLetterClient) *service {
+	return &service{
+		deadLetterClient: deadLetterClient,
+	}
 }
 func init() {
 	var _ contracts_cloudeventoutput.ICloudEventOutput = (*service)(nil)

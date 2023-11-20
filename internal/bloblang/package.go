@@ -1,17 +1,21 @@
 package bloblang
 
 import (
+	"encoding/json"
+
 	"github.com/benthosdev/benthos/v4/public/bloblang"
+	"github.com/rs/zerolog/log"
 )
 
 type (
 	wrappedContent struct {
+		Type    string      `json:"type"`
 		Headers interface{} `json:"headers"`
 		Content interface{} `json:"content"`
 	}
 )
 
-func init() {
+func ddd() {
 	crazyObjectSpec := bloblang.NewPluginSpec().
 		Param(bloblang.NewAnyParam("headers")).Param(bloblang.NewAnyParam("content"))
 
@@ -27,11 +31,18 @@ func init() {
 
 		// turn content which can be empty or not a json object into an encoded json string
 		return func() (interface{}, error) {
-
-			return wrappedContent{
+			obj := &wrappedContent{
+				Type:    "error",
 				Headers: headers,
 				Content: content,
-			}, nil
+			}
+			obj2 := map[string]interface{}{}
+			bb, _ := json.Marshal(obj)
+			json.Unmarshal(bb, &obj2)
+			log.Info().Interface("obj", obj).Msg("wrap")
+
+			return obj2, nil
+
 		}, nil
 	})
 	if err != nil {

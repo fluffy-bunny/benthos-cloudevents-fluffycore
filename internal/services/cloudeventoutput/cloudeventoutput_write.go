@@ -11,9 +11,8 @@ import (
 	proto_cloudevents "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/proto/cloudevents"
 	status "github.com/gogo/status"
 	log "github.com/rs/zerolog/log"
-	kgo "github.com/twmb/franz-go/pkg/kgo"
 	codes "google.golang.org/grpc/codes"
-	"google.golang.org/protobuf/encoding/protojson"
+	protojson "google.golang.org/protobuf/encoding/protojson"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -177,45 +176,18 @@ func (s *service) Write(ctx context.Context, message *benthos_service.Message) e
 		processRequest.Batch = ceBatch
 	}
 	if len(badParts) > 0 {
-		if s.kafkaFranzDeadLetter != nil {
-			err = s.SendBadPartsToDeadLetterQueue(ctx, badParts)
-			if err != nil {
-				log.Error().Err(err).Msg("failed to SendBadPartsToDeadLetterQueue")
-				return err
-			}
-		} else {
-			// pass the bad parts to the processor
-			processRequest.BadBatch = &proto_cloudeventprocessor.ByteBatch{
-				Messages: badParts,
-			}
+		// pass the bad parts to the processor
+		processRequest.BadBatch = &proto_cloudeventprocessor.ByteBatch{
+			Messages: badParts,
 		}
+
 	}
-	log.Info().Interface("ceBatch", ceBatch).Msg("ceBatch")
+	log.Info().Int("count", len(ceBatch.Events)).Interface("ceBatch", ceBatch).Msg("ceBatch")
 	_, err = s.cloudEventProcessorClient.ProcessCloudEvents(ctx, &proto_cloudeventprocessor.ProcessCloudEventsRequest{
 		Batch: ceBatch,
 	})
 	if err != nil {
 		log.Error().Err(err).Msg("failed to ProcessCloudEvents")
-		return err
-	}
-	return nil
-}
-
-func (s *service) SendBadPartsToDeadLetterQueue(ctx context.Context, badParts [][]byte) error {
-
-	records := []*kgo.Record{}
-	for _, part := range badParts {
-		record := &kgo.Record{
-			Value: part,
-			Topic: s.kafkaFranzDeadLetter.Topic,
-		}
-		records = append(records, record)
-	}
-
-	result := s.deadLetterClient.ProduceSync(ctx, records...)
-	err := result.FirstErr()
-	if err != nil {
-		log.Error().Err(err).Msg("failed to ProduceSync")
 		return err
 	}
 	return nil

@@ -46,7 +46,7 @@ func AddSingletonKafkaDeadLetterClient(builder di.ContainerBuilder) {
 			return nil, err
 		}
 		return &service{
-			config: &config.KafkaConfig,
+			config: &config.KafkaDeadLetterConfig,
 			client: cl,
 		}, nil
 
