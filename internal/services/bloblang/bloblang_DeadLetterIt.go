@@ -82,6 +82,18 @@ func (s *service) DeadLetterIt(args *bloblang.ParsedParams) (bloblang.Function, 
 		for k, v := range headersMap {
 			sV, ok := v.(string)
 			if !ok {
+				sVA, ok := v.([]interface{})
+				if ok {
+					for _, v2 := range sVA {
+						sV2, ok := v2.(string)
+						if ok {
+							record.Headers = append(record.Headers, kgo.RecordHeader{
+								Key:   k,
+								Value: []byte(sV2),
+							})
+						}
+					}
+				}
 				continue
 			}
 

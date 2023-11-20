@@ -128,11 +128,15 @@ services:
       service: micro
     image: "${BENTHOS_IMAGE_NAME}:${BENTHOS_IMAGE_VERSION}"
     container_name: "${BENTHOS_CONTAINER_NAME}"
+    environment:
+      - KAFKA_DEAD_LETTER_CONFIG__SEEDS=${KAFKA_NAME}:${KAFKA_PORT}
+      - KAFKA_DEAD_LETTER_CONFIG__TOPIC=${KAFKA_DEAD_LETTER_CONFIG__TOPIC}
     depends_on:
       - zookeeper
       - kafka
     volumes:
        - "./config/benthos/benthos.kafka.yaml:/benthos.yaml"  
+       - "./config/benthos/request_units_schema.json:/schemas/request_units_schema.json"  
     networks:
       - benthos
     entrypoint: ["/app/benthos"]
