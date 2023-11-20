@@ -10,8 +10,24 @@ var configSpec = benthos_service.NewConfigSpec().
 	Summary("Creates an output to a grpc service.").
 	Field(benthos_service.NewStringField("grpc_url")).
 	Field(benthos_service.NewInputMaxInFlightField()).
-	Field(NewAuthConfig().Optional())
+	Field(NewAuthConfig().Optional()).
+	Field(NewKafkaDeadLetterConfig().Optional())
 
+func NewKafkaDeadLetterConfig() *benthos_service.ConfigField {
+	return benthos_service.NewObjectField("kafka_franz_dead_letter",
+		benthos_service.NewStringListField("seed_brokers"),
+		benthos_service.NewStringField("topic"),
+		benthos_service.NewStringField("key").Optional(),
+		NewSASLConfig().Optional(),
+	)
+}
+func NewSASLConfig() *benthos_service.ConfigField {
+	return benthos_service.NewObjectField("sasl",
+		benthos_service.NewStringField("mechanism"),
+		benthos_service.NewStringField("username"),
+		benthos_service.NewStringField("password"),
+	)
+}
 func NewBasicAuthConfig() *benthos_service.ConfigField {
 	return benthos_service.NewObjectField("basic",
 		benthos_service.NewStringField("user_name"),
@@ -40,6 +56,20 @@ func NewAuthConfig() *benthos_service.ConfigField {
 	)
 }
 
+type (
+	kafkaFranzDeadLetterConfig struct {
+		SeedBrokers []string
+		Topic       string
+		Key         string
+		SASL        *SASLConfig
+	}
+	SASLConfig struct {
+		Mechanism string
+		Username  string
+		Password  string
+	}
+)
+
 func (s *service) Register() error {
 	benthos_service.RegisterOutput("cloudevents_grpc",
 		configSpec, func(conf *benthos_service.ParsedConfig, mgr *benthos_service.Resources) (out benthos_service.Output, maxInFlight int, err error) {
@@ -51,6 +81,57 @@ func (s *service) Register() error {
 			maxInFlight, err = conf.FieldInt("max_in_flight")
 			if err != nil {
 				return nil, 0, err
+			}
+			loadBasicDeadLetterConfig := func() (*kafkaFranzDeadLetterConfig, error) {
+				seedBrokers, err := conf.FieldStringList("kafka_franz_dead_letter", "seed_brokers")
+				if err != nil {
+					return nil, err
+				}
+				topic, err := conf.FieldString("kafka_franz_dead_letter", "topic")
+				if err != nil {
+					return nil, err
+				}
+				key, err := conf.FieldString("kafka_franz_dead_letter", "key")
+				if err != nil {
+					key = ""
+				}
+				return &kafkaFranzDeadLetterConfig{
+					SeedBrokers: seedBrokers,
+					Topic:       topic,
+					Key:         key,
+				}, nil
+			}
+			kfdlConfig, err := loadBasicDeadLetterConfig()
+			if err != nil {
+				return nil, 0, err
+			}
+			if kfdlConfig != nil {
+				s.kafkaFranzDeadLetter = kfdlConfig
+				// next get the SASL config
+				kafkaFranzDeadLetterConfig, err := conf.FieldAnyMap("kafka_franz_dead_letter")
+				if err == nil {
+					pc, ok := kafkaFranzDeadLetterConfig["sasl"]
+					if ok {
+						mechanism, err := pc.FieldString("mechanism")
+						if err != nil {
+							return nil, 0, err
+						}
+						username, err := pc.FieldString("username")
+						if err != nil {
+							return nil, 0, err
+						}
+						password, err := pc.FieldString("password")
+						if err != nil {
+							return nil, 0, err
+						}
+						saslConfig := &SASLConfig{
+							Mechanism: mechanism,
+							Username:  username,
+							Password:  password,
+						}
+						kfdlConfig.SASL = saslConfig
+					}
+				}
 			}
 			auth, err := conf.FieldAnyMap("auth")
 			if err != nil {

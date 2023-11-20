@@ -5,6 +5,7 @@ import (
 	contracts_cloudeventoutput "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/cloudeventoutput"
 	proto_cloudeventprocessor "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/proto/cloudeventprocessor"
 	di "github.com/fluffy-bunny/fluffy-dozm-di"
+	kgo "github.com/twmb/franz-go/pkg/kgo"
 )
 
 type (
@@ -29,6 +30,8 @@ type (
 		apiKeyConfig              *apiKeyConfig
 		basicAuthConfig           *basicAuthConfig
 		cloudEventProcessorClient proto_cloudeventprocessor.CloudEventProcessorClient
+		kafkaFranzDeadLetter      *kafkaFranzDeadLetterConfig
+		deadLetterClient          *kgo.Client
 	}
 )
 

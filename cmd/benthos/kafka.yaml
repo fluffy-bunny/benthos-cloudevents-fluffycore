@@ -23,7 +23,10 @@ output:
   cloudevents_grpc: 
     grpc_url: "localhost:9050"
     max_in_flight: 64
-
+    kafka_franz_dead_letter:
+      seed_brokers: ["localhost:9093"]
+      topic: "cloudevents-core-deadletter"
+     
     # auth[optional] one of: [oauth2,basic,apikey](ordered by priority)
     #--------------------------------------------------------------------
     #auth:
