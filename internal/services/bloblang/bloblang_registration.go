@@ -5,10 +5,19 @@ import (
 )
 
 func (s *service) Register() error {
-	crazyObjectSpec := bloblang.NewPluginSpec().
+	deadLetterItSpec := bloblang.NewPluginSpec().
 		Param(bloblang.NewAnyParam("headers")).
 		Param(bloblang.NewAnyParam("content"))
-	err := bloblang.RegisterFunctionV2("deadletterit", crazyObjectSpec, s.DeadLetterIt)
-
+	err := bloblang.RegisterFunctionV2("deadletterit", deadLetterItSpec, s.DeadLetterIt)
+	if err != nil {
+		return err
+	}
+	wrapItSpec := bloblang.NewPluginSpec().
+		Param(bloblang.NewAnyParam("headers")).
+		Param(bloblang.NewAnyParam("content"))
+	err = bloblang.RegisterFunctionV2("wrapit", wrapItSpec, s.WrapIt)
+	if err != nil {
+		return err
+	}
 	return err
 }

@@ -8,8 +8,11 @@ import (
 	contracts_kafkaclient "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/contracts/kafkaclient"
 	proto_cloudeventprocessor "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/proto/cloudeventprocessor"
 	di "github.com/fluffy-bunny/fluffy-dozm-di"
+	fluffycore_utils "github.com/fluffy-bunny/fluffycore/utils"
+	"github.com/gogo/status"
 	zerolog "github.com/rs/zerolog"
 	kgo "github.com/twmb/franz-go/pkg/kgo"
+	"google.golang.org/grpc/codes"
 )
 
 type (
@@ -29,22 +32,42 @@ func AddCloudEventProcessorServer(builder di.ContainerBuilder) {
 			}
 		})
 }
+func (s *service) validateProcessCloudEventsRequest(request *proto_cloudeventprocessor.ProcessCloudEventsRequest) error {
+	if request == nil {
+		return nil
+	}
+	if fluffycore_utils.IsEmptyOrNil(request.Channel) {
+		return status.Error(codes.InvalidArgument, "request.Channel is empty")
+	}
 
+	return nil
+}
 func (s *service) ProcessCloudEvents(ctx context.Context, request *proto_cloudeventprocessor.ProcessCloudEventsRequest) (*proto_cloudeventprocessor.ProcessCloudEventsResponse, error) {
+	log := zerolog.Ctx(ctx).With().Str("method", "ProcessCloudEvents").Logger()
+	err := s.validateProcessCloudEventsRequest(request)
+	if err != nil {
+		log.Debug().Err(err).Msg("validateProcessCloudEventsRequest")
+		return nil, err
+	}
+	log = log.With().Str("channel", request.Channel).Logger()
+	ctx = log.WithContext(ctx)
 	s.processGoodBatch(ctx, request)
 	s.processBadBatch(ctx, request)
 	return &proto_cloudeventprocessor.ProcessCloudEventsResponse{}, nil
 }
 
 func (s *service) processGoodBatch(ctx context.Context, request *proto_cloudeventprocessor.ProcessCloudEventsRequest) (*proto_cloudeventprocessor.ProcessCloudEventsResponse, error) {
-	log := zerolog.Ctx(ctx)
+	log := zerolog.Ctx(ctx).With().Int("count", len(request.Batch.Events)).Logger()
 	log.Info().Msg("--> processGoodBatch")
 	log.Info().Interface("good_batch", request.Batch).Msg("processGoodBatch")
 	return &proto_cloudeventprocessor.ProcessCloudEventsResponse{}, nil
 }
 
 func (s *service) processBadBatch(ctx context.Context, request *proto_cloudeventprocessor.ProcessCloudEventsRequest) (*proto_cloudeventprocessor.ProcessCloudEventsResponse, error) {
-	log := zerolog.Ctx(ctx)
+	if request.BadBatch == nil {
+		return &proto_cloudeventprocessor.ProcessCloudEventsResponse{}, nil
+	}
+	log := zerolog.Ctx(ctx).With().Int("count", len(request.BadBatch.Messages)).Logger()
 	log.Info().Msg("--> processBadBatch")
 	log.Info().Interface("bad_batch", request.BadBatch).Msg("processBadBatch")
 	if request.BadBatch == nil {

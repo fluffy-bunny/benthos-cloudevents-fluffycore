@@ -37,6 +37,7 @@ output:
   cloudevents_grpc:
     grpc_url: "processor:9050"
     max_in_flight: 64
+    channel: "mychannel"
 
     # auth[optional] one of: [oauth2,basic,apikey](ordered by priority)
     #--------------------------------------------------------------------

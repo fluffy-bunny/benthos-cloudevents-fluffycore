@@ -25,7 +25,9 @@ type (
 	}
 	service struct {
 		// grpcUrl: i.e. grpc://localhost:5001
-		grpcUrl                   string
+		grpcUrl string
+		// channel: is a hint to the processor.  This allows a processor to have a single app that takes all the requests.
+		channel                   string
 		oauth2config              *oauth2config
 		apiKeyConfig              *apiKeyConfig
 		basicAuthConfig           *basicAuthConfig
