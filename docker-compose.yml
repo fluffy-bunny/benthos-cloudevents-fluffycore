@@ -140,8 +140,7 @@ services:
        - "./config/benthos/request_units_schema.json:/schemas/request_units_schema.json"  
     networks:
       - benthos
-    entrypoint: ["/app/benthos"]
- 
+  
 # Network
 #---------------------------------------------------
 networks:
