@@ -53,3 +53,9 @@ output:
     #  apikey:
     #    name: "x-api-key"
     #    value: "secret"
+logger:
+  level: DEBUG
+  format: json
+  add_timestamp: true
+  static_fields:
+    '@service': benthos

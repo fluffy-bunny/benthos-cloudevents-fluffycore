@@ -1,6 +1,6 @@
 input:
   kafka:
-    addresses: ["localhost:9093"]
+    addresses: ["${INPUT_KAFKA_BROKERS}"]
     topics: ["cloudevents-core"]
     consumer_group: "$Default2"
     multi_header: true
@@ -35,7 +35,7 @@ pipeline:
 
 output:
   cloudevents_grpc:
-    grpc_url: "localhost:9050"
+    grpc_url: "${OUTPUT_CLOUDEVENTOUTPUT_GRPC_URL}"
     max_in_flight: 64
     channel: "mychannel"
 
@@ -53,3 +53,9 @@ output:
     #  apikey:
     #    name: "x-api-key"
     #    value: "secret"
+logger:
+  level: ${LOG_LEVEL}
+  format: json
+  add_timestamp: true
+  static_fields:
+    '@service': benthos

@@ -1,6 +1,7 @@
 package cloudeventoutput
 
 import (
+	benthos_service "github.com/benthosdev/benthos/v4/public/service"
 	contracts_benthos "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/benthos"
 	contracts_cloudeventoutput "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/cloudeventoutput"
 	contracts_kafkaclient "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/kafkaclient"
@@ -33,6 +34,7 @@ type (
 		basicAuthConfig           *basicAuthConfig
 		cloudEventProcessorClient proto_cloudeventprocessor.CloudEventProcessorClient
 		deadLetterClient          contracts_kafkaclient.IDeadLetterClient
+		logger                    *benthos_service.Logger
 	}
 )
 

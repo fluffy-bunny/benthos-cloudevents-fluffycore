@@ -1,9 +1,11 @@
 package cloudeventoutput
 
 import (
+	"math"
 	"strings"
 
 	benthos_service "github.com/benthosdev/benthos/v4/public/service"
+	utils "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/utils"
 )
 
 const (
@@ -65,9 +67,15 @@ func NewAuthConfig() *benthos_service.ConfigField {
 	)
 }
 
+const useGlobalSkipFrameCount = math.MinInt32
+
 func (s *service) Register() error {
 	benthos_service.RegisterOutput(OutputName,
 		configSpec, func(conf *benthos_service.ParsedConfig, mgr *benthos_service.Resources) (out benthos_service.Output, maxInFlight int, err error) {
+			s.logger = mgr.Logger()
+			log := s.logger.With("output", OutputName).With("a", 1)
+			log.With("caller", utils.Caller()).Info("Register")
+			log.Debug("hi")
 			grpcUrl, err := conf.FieldString(FieldName_gRPCUrl)
 			if err != nil {
 				return nil, 0, err

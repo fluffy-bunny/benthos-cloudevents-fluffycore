@@ -62,7 +62,9 @@
             "env": {
                 "APPLICATION_NAME": "processor",
                 "APPLICATION_ENVIRONMENT":"Development",
-                "LOG_LEVEL": "debug",     
+                "LOG_LEVEL": "info",
+                "INPUT_KAFKA_BROKERS": "localhost:9093",
+                "OUTPUT_CLOUDEVENTOUTPUT_GRPC_URL": "localhost:9050",  
                 
 
             },
@@ -77,8 +79,9 @@
             "env": {
                 "APPLICATION_NAME": "processor",
                 "APPLICATION_ENVIRONMENT":"Development",
-                "LOG_LEVEL": "debug",     
-                
+                "LOG_LEVEL": "info",
+                "INPUT_KAFKA_BROKERS": "localhost:9093",
+                "OUTPUT_CLOUDEVENTOUTPUT_GRPC_URL": "localhost:9050",  
 
             },
             "args": [ "-c", "./kafka.output.processing.yaml" ]      
