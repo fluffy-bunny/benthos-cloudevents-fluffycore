@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/benthosdev/benthos/v4/public/service"
 	"github.com/rs/zerolog"
@@ -37,7 +40,6 @@ func main() {
 	log.Logger = logz.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	ctx = log.Logger.WithContext(ctx)
 
-	log.Info().Msg("main")
 	startup := internal_runtime.NewStartup()
 	builder := di.Builder()
 	startup.ConfigureServices(ctx, builder)
@@ -47,5 +49,28 @@ func main() {
 	for _, registration := range registrations {
 		registration.Register()
 	}
-	service.RunCLI(context.Background())
+	waitChannel := make(chan os.Signal, 1)
+
+	originalArgs := os.Args
+
+	// cancel context
+	ctx, cancel := context.WithCancel(ctx)
+
+	// benthos thinks its the only one, so lets replace the args and then set them back when it launches.
+	os.Args = []string{originalArgs[0], "-c", "./kafka.yaml", "-t", "./templates/*.yaml"}
+	go func() {
+		service.RunCLI(context.Background())
+	}()
+	time.Sleep(5 * time.Second)
+	os.Args = originalArgs
+	// do my stuff
+	signal.Notify(
+		waitChannel,
+		os.Interrupt,
+		syscall.SIGINT,
+		syscall.SIGQUIT,
+		syscall.SIGTERM,
+	)
+	<-waitChannel
+	cancel()
 }
