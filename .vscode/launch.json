@@ -68,7 +68,7 @@
                 
 
             },
-            "args": [ "-c", "./kafka.yaml" , "-t", "./templates/*.yaml"]      
+            "args": ["server", "-c", "./kafka.yaml" , "-t", "./templates/*.yaml"]      
         },
         {
             "name": "benthos-kafka.output.processing",
