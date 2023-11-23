@@ -65,10 +65,10 @@
                 "LOG_LEVEL": "info",
                 "INPUT_KAFKA_BROKERS": "localhost:9093",
                 "OUTPUT_CLOUDEVENTOUTPUT_GRPC_URL": "localhost:9050",  
-                
+                "BENTHOS_OS_ARGS": "-c,./kafka.yaml,-t,./templates/*.yaml"
 
             },
-            "args": ["server", "-c", "./kafka.yaml" , "-t", "./templates/*.yaml"]      
+            "args": ["server"]      
         },
         {
             "name": "benthos-kafka.output.processing",

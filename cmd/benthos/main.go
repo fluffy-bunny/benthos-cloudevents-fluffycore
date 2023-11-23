@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -55,9 +57,17 @@ func main() {
 
 	// cancel context
 	ctx, cancel := context.WithCancel(ctx)
-
 	// benthos thinks its the only one, so lets replace the args and then set them back when it launches.
-	os.Args = []string{originalArgs[0], "-c", "./kafka.yaml", "-t", "./templates/*.yaml"}
+	benthosOSArgsS := os.Getenv("BENTHOS_OS_ARGS")
+	fmt.Println("BENTHOS_OS_ARGS", benthosOSArgsS)
+	// split them
+	benthosOSArgs := strings.Split(benthosOSArgsS, ",")
+	os.Args = []string{
+		originalArgs[0],
+	}
+	os.Args = append(os.Args, benthosOSArgs...)
+	log.Info().Interface("os.Args", os.Args).Msg("os.Args")
+	os.Args[0] = "benthos"
 	go func() {
 		service.RunCLI(context.Background())
 	}()

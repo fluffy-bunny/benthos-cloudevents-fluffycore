@@ -61,4 +61,4 @@ ENV PATH=/app:${PATH}
 
 ENTRYPOINT ["/app/benthos"]
  
-CMD ["-c", "/benthos.yaml",  "-t", "/templates/*.yaml"]
+#CMD ["-c", "/benthos.yaml",  "-t", "/templates/*.yaml"]
