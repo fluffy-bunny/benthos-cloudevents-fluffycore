@@ -9,7 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/benthosdev/benthos/v4/public/service"
+	"github.com/benthosdev/benthos/v4/public/service/servicetest"
+
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
@@ -53,26 +54,24 @@ func main() {
 	}
 	waitChannel := make(chan os.Signal, 1)
 
-	originalArgs := os.Args
-
 	// cancel context
 	ctx, cancel := context.WithCancel(ctx)
-	// benthos thinks its the only one, so lets replace the args and then set them back when it launches.
 	benthosOSArgsS := os.Getenv("BENTHOS_OS_ARGS")
 	fmt.Println("BENTHOS_OS_ARGS", benthosOSArgsS)
 	// split them
 	benthosOSArgs := strings.Split(benthosOSArgsS, ",")
-	os.Args = []string{
-		originalArgs[0],
+
+	newArgs := []string{
+		"benthos",
 	}
-	os.Args = append(os.Args, benthosOSArgs...)
-	log.Info().Interface("os.Args", os.Args).Msg("os.Args")
-	os.Args[0] = "benthos"
+	newArgs = append(newArgs, benthosOSArgs...)
+	log.Info().Interface("benthos_args", newArgs).Msg("benthosOSArgs")
+
 	go func() {
-		service.RunCLI(context.Background())
+		servicetest.RunCLIWithArgs(ctx, newArgs...)
 	}()
 	time.Sleep(5 * time.Second)
-	os.Args = originalArgs
+
 	// do my stuff
 	signal.Notify(
 		waitChannel,
