@@ -7,14 +7,12 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-	"time"
 
 	"regexp"
 
 	//	benthos_service_servicetest "github.com/benthosdev/benthos/v4/public/service/servicetest"
 	//	benthos_service "github.com/benthosdev/benthos/v4/public/service"
 	benthos_service "github.com/benthosdev/benthos/v4/public/service"
-	benthos_service_servicetest "github.com/benthosdev/benthos/v4/public/service/servicetest"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -52,14 +50,11 @@ func main() {
 	builder := di.Builder()
 	startup.ConfigureServices(ctx, builder)
 	internal.Container = builder.Build()
-
-	jsonSchema, err := os.ReadFile("../../config/benthos/request_units_schema.minified.json")
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error reading file")
+	registrations := di.Get[[]contracts_benthos.IBenthosRegistration](internal.Container)
+	for _, registration := range registrations {
+		registration.Register()
 	}
-	os.Setenv("JSON_SCHEMA", string(jsonSchema))
 
-	log.Info().Str("jsonSchema", string(jsonSchema)).Msg("jsonSchema")
 	// load kafka.yml into a string
 	kafkaYaml, err := LoadYamlFile("./kafka.yaml")
 	if err != nil {
@@ -70,12 +65,11 @@ func main() {
 	builderOne := benthos_service.NewStreamBuilder()
 	err = builderOne.SetYAML(kafkaYaml)
 	if err != nil {
-		log.Error().Err(err).Msg("Error SetYAML")
+		log.Fatal().Err(err).Msg("Error SetYAML")
 	}
-
-	registrations := di.Get[[]contracts_benthos.IBenthosRegistration](internal.Container)
-	for _, registration := range registrations {
-		registration.Register()
+	streamOne, err := builderOne.Build()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Error Build")
 	}
 	waitChannel := make(chan os.Signal, 1)
 
@@ -93,13 +87,12 @@ func main() {
 	log.Info().Interface("benthos_args", newArgs).Msg("benthosOSArgs")
 
 	go func() {
-		//err := streamOne.Run(ctx)
-		//if err != nil {
-		//	log.Fatal().Err(err).Msg("Error reading file")
-		//	}
-		benthos_service_servicetest.RunCLIWithArgs(ctx, newArgs...)
+		err := streamOne.Run(ctx)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Error reading file")
+		}
+		//benthos_service_servicetest.RunCLIWithArgs(ctx, newArgs...)
 	}()
-	time.Sleep(5 * time.Second)
 
 	// do my stuff
 	signal.Notify(
@@ -110,6 +103,7 @@ func main() {
 		syscall.SIGTERM,
 	)
 	<-waitChannel
+	streamOne.Stop(ctx)
 
 	cancel()
 }

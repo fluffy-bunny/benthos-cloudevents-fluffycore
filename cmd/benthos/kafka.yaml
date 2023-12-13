@@ -11,7 +11,7 @@ input:
       period: 20s
       processors:
         - json_schema:
-            schema_path: "file://C:/work/github/mapped/ccc/benthos-cloudevents-fluffycore/config/benthos/request_units_schema.json"
+            schema: '{"$schema":"http://json-schema.org/draft-04/schema#","type":"object","properties":{"id":{"type":"string"},"source":{"type":"string"},"specVersion":{"type":"string","enum":["1.0"]},"type":{"type":"string","enum":["requestunits.v1"]},"attributes":{"type":"object","properties":{"orgid":{"type":"object","properties":{"ceString":{"type":"string"}},"required":["ceString"]},"time":{"type":"object","properties":{"ceTimestamp":{"type":"string"}},"required":["ceTimestamp"]}},"required":["orgid","partition-key","time"]},"textData":{"type":"string"}},"required":["id","source","specVersion","type","attributes","textData"]}'
         - switch:
             - check: errored()
               processors:
@@ -55,3 +55,9 @@ output:
     #  apikey:
     #    name: "x-api-key"
     #    value: "secret"
+logger:
+  level: ${LOG_LEVEL}
+  format: json
+  add_timestamp: true
+  static_fields:
+    "@service": benthos
