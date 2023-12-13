@@ -5,6 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "streams-builder",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/streams-builder",
+             
+        }, 
+        {
             "name": "processor",
             "type": "go",
             "request": "launch",
@@ -65,7 +73,7 @@
                 "LOG_LEVEL": "info",
                 "INPUT_KAFKA_BROKERS": "localhost:9093",
                 "OUTPUT_CLOUDEVENTOUTPUT_GRPC_URL": "localhost:9050",  
-                "BENTHOS_OS_ARGS": "-c,./kafka.yaml,-t,./templates/*.yaml"
+                "BENTHOS_OS_ARGS": "-c,./kafka.yaml"
 
             },
             "args": ["server"]      

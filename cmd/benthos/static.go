@@ -1,3 +1,6 @@
+package main
+
+var kafkaYaml = `
 http:
   enabled: false
 input:
@@ -11,7 +14,8 @@ input:
       period: 20s
       processors:
         - json_schema:
-            schema_path: "file://C:/work/github/mapped/ccc/benthos-cloudevents-fluffycore/config/benthos/request_units_schema.json"
+            schema: "${JSON_SCHEMA}"
+        #            schema_path: "file://C:/work/mapped/benthos-cloudevents-fluffycore/config/benthos/request_units_schema.json"
         - switch:
             - check: errored()
               processors:
@@ -55,3 +59,11 @@ output:
     #  apikey:
     #    name: "x-api-key"
     #    value: "secret"
+logger:
+  level: ${LOG_LEVEL}
+  format: json
+  add_timestamp: true
+  static_fields:
+    "@service": benthos
+
+`

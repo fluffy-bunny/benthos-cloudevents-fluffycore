@@ -9,7 +9,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/benthosdev/benthos/v4/public/service/servicetest"
+	"regexp"
+
+	//	benthos_service_servicetest "github.com/benthosdev/benthos/v4/public/service/servicetest"
+	//	benthos_service "github.com/benthosdev/benthos/v4/public/service"
+	benthos_service "github.com/benthosdev/benthos/v4/public/service"
+	benthos_service_servicetest "github.com/benthosdev/benthos/v4/public/service/servicetest"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -48,6 +53,26 @@ func main() {
 	startup.ConfigureServices(ctx, builder)
 	internal.Container = builder.Build()
 
+	jsonSchema, err := os.ReadFile("../../config/benthos/request_units_schema.minified.json")
+	if err != nil {
+		log.Fatal().Err(err).Msg("Error reading file")
+	}
+	os.Setenv("JSON_SCHEMA", string(jsonSchema))
+
+	log.Info().Str("jsonSchema", string(jsonSchema)).Msg("jsonSchema")
+	// load kafka.yml into a string
+	kafkaYaml, err := LoadYamlFile("./kafka.yaml")
+	if err != nil {
+		log.Fatal().Err(err).Msg("Error reading file")
+	}
+	log.Info().Str("kafka.yml", kafkaYaml).Msg("kafka.yml")
+
+	builderOne := benthos_service.NewStreamBuilder()
+	err = builderOne.SetYAML(kafkaYaml)
+	if err != nil {
+		log.Error().Err(err).Msg("Error SetYAML")
+	}
+
 	registrations := di.Get[[]contracts_benthos.IBenthosRegistration](internal.Container)
 	for _, registration := range registrations {
 		registration.Register()
@@ -68,7 +93,11 @@ func main() {
 	log.Info().Interface("benthos_args", newArgs).Msg("benthosOSArgs")
 
 	go func() {
-		servicetest.RunCLIWithArgs(ctx, newArgs...)
+		//err := streamOne.Run(ctx)
+		//if err != nil {
+		//	log.Fatal().Err(err).Msg("Error reading file")
+		//	}
+		benthos_service_servicetest.RunCLIWithArgs(ctx, newArgs...)
 	}()
 	time.Sleep(5 * time.Second)
 
@@ -81,5 +110,24 @@ func main() {
 		syscall.SIGTERM,
 	)
 	<-waitChannel
+
 	cancel()
+}
+
+func LoadYamlFile(filename string) (string, error) {
+	// load kafka.yml into a string
+	kafkaYaml, err := os.ReadFile(filename)
+	if err != nil {
+		return "", err
+	}
+	return string(kafkaYaml), nil
+}
+func FixupFromEnv(str string) string {
+	re := regexp.MustCompile(`\${.*?}`)
+	matches := re.FindAllString(str, -1)
+	for _, match := range matches {
+		envVar := os.Getenv(match[2 : len(match)-1])
+		str = regexp.MustCompile(regexp.QuoteMeta(match)).ReplaceAllString(str, envVar)
+	}
+	return str
 }
