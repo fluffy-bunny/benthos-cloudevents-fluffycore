@@ -2,17 +2,13 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
-	"strings"
-	"syscall"
-
 	"regexp"
+	"syscall"
 
 	//	benthos_service_servicetest "github.com/benthosdev/benthos/v4/public/service/servicetest"
 	//	benthos_service "github.com/benthosdev/benthos/v4/public/service"
-	benthos_service "github.com/benthosdev/benthos/v4/public/service"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -55,44 +51,20 @@ func main() {
 		registration.Register()
 	}
 
-	// load kafka.yml into a string
-	kafkaYaml, err := LoadYamlFile("./kafka.sasl.yaml")
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error reading file")
-	}
-	log.Info().Str("kafka.yml", kafkaYaml).Msg("kafka.yml")
-
-	builderOne := benthos_service.NewStreamBuilder()
-	err = builderOne.SetYAML(kafkaYaml)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error SetYAML")
-	}
-	streamOne, err := builderOne.Build()
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error Build")
-	}
 	waitChannel := make(chan os.Signal, 1)
 
 	// cancel context
 	ctx, cancel := context.WithCancel(ctx)
-	benthosOSArgsS := os.Getenv("BENTHOS_OS_ARGS")
-	fmt.Println("BENTHOS_OS_ARGS", benthosOSArgsS)
-	// split them
-	benthosOSArgs := strings.Split(benthosOSArgsS, ",")
 
-	newArgs := []string{
-		"benthos",
+	benthosStreams := di.Get[[]contracts_benthos.IBenthosStream](internal.Container)
+	for _, benthosStream := range benthosStreams {
+		go func(benthosStream contracts_benthos.IBenthosStream) {
+			err := benthosStream.Run(ctx)
+			if err != nil {
+				log.Fatal().Err(err).Msg("Error starting stream")
+			}
+		}(benthosStream)
 	}
-	newArgs = append(newArgs, benthosOSArgs...)
-	log.Info().Interface("benthos_args", newArgs).Msg("benthosOSArgs")
-
-	go func() {
-		err := streamOne.Run(ctx)
-		if err != nil {
-			log.Fatal().Err(err).Msg("Error reading file")
-		}
-		//benthos_service_servicetest.RunCLIWithArgs(ctx, newArgs...)
-	}()
 
 	// do my stuff
 	signal.Notify(
@@ -103,7 +75,9 @@ func main() {
 		syscall.SIGTERM,
 	)
 	<-waitChannel
-	streamOne.Stop(ctx)
+	for _, benthosStream := range benthosStreams {
+		benthosStream.Stop(ctx)
+	}
 
 	cancel()
 }

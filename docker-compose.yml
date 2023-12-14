@@ -1,6 +1,5 @@
 version: "3.8"
 
-
 services:
   # Kafka (routes events between mock-iothub<->connector-functions and connector-*<->merge)
   kafka:
@@ -30,7 +29,7 @@ services:
     depends_on:
       - zookeeper
     healthcheck:
-      test: [ "CMD-SHELL", "kafka-broker-api-versions.sh --version" ]
+      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --version"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -63,7 +62,7 @@ services:
       - ALLOW_ANONYMOUS_LOGIN=yes
       - ZOO_LOG_LEVEL=WARN
     healthcheck:
-      test: [ "CMD-SHELL", "echo mntr | nc -w 2 -q 2 localhost 2181" ]
+      test: ["CMD-SHELL", "echo mntr | nc -w 2 -q 2 localhost 2181"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -104,7 +103,7 @@ services:
         max-size: "${CONTAINER_LOG_SIZE}"
         max-file: "${CONTAINER_LOG_COUNT}"
     environment:
-      APPLICATION_NAME: "${PROCESSOR_APPLICATION_NAME}"      
+      APPLICATION_NAME: "${PROCESSOR_APPLICATION_NAME}"
       APPLICATION_ENVIRONMENT: "${APPLICATION_ENVIRONMENT}"
       LOG_LEVEL: "${LOG_LEVEL}"
       PRETTY_LOG: "${PRETTY_LOG}"
@@ -117,7 +116,7 @@ services:
       KAFKA_DEAD_LETTER_CONFIG__SEEDS: "${KAFKA_NAME}:${KAFKA_PORT}"
       KAFKA_DEAD_LETTER_CONFIG__TOPIC: "${KAFKA_CLOUDEVENTS_CORE_DEADLETTER_TOPIC}"
     volumes:
-       - ./config/processor:/config        
+      - ./config/processor:/config
     networks:
       - benthos
     entrypoint: ["/app/processor", "serve"]
@@ -131,16 +130,15 @@ services:
     environment:
       - KAFKA_DEAD_LETTER_CONFIG__SEEDS=${KAFKA_NAME}:${KAFKA_PORT}
       - KAFKA_DEAD_LETTER_CONFIG__TOPIC=${KAFKA_DEAD_LETTER_CONFIG__TOPIC}
-      - BENTHOS_OS_ARGS=-c,/benthos.yaml,-t,/templates/*.yaml
     depends_on:
       - zookeeper
       - kafka
     volumes:
-       - "./config/benthos/benthos.kafka.yaml:/benthos.yaml"  
-       - "./config/benthos/request_units_schema.json:/schemas/request_units_schema.json"  
+      - "./config/benthos/benthos.kafka.yaml:/benthos.yaml"
+      - "./config/benthos/request_units_schema.json:/schemas/request_units_schema.json"
     networks:
       - benthos
-  
+
 # Network
 #---------------------------------------------------
 networks:

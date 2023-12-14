@@ -13,12 +13,14 @@ type (
 	Config struct {
 		DDProfilerConfig      *fluffycore_contracts_ddprofiler.Config `json:"ddProfilerConfig" mapstructure:"DD_PROFILER_CONFIG"`
 		KafkaDeadLetterConfig *KafkaConfig                            `json:"kafkaDeadLetterConfig" mapstructure:"KAFKA_DEAD_LETTER_CONFIG"`
+		EnableKafkaSASL       bool                                    `json:"enableKafkaSASL" mapstructure:"ENABLE_KAFKA_SASL"`
 	}
 )
 
 // ConfigDefaultJSON default json
 var ConfigDefaultJSON = []byte(`
 {
+	"ENABLE_KAFKA_SASL": false,
 	"DD_PROFILER_CONFIG": {
 		"ENABLED": false,
 		"SERVICE_NAME": "in-environment",

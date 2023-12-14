@@ -71,10 +71,9 @@
                 "APPLICATION_NAME": "processor",
                 "APPLICATION_ENVIRONMENT":"Development",
                 "LOG_LEVEL": "info",
+                "ENABLE_KAFKA_SASL": "false",
                 "INPUT_KAFKA_BROKERS": "localhost:9093",
                 "OUTPUT_CLOUDEVENTOUTPUT_GRPC_URL": "localhost:9050",  
-                "BENTHOS_OS_ARGS": "-c,./kafka.yaml"
-
             },
             "args": ["server"]      
         },
@@ -90,9 +89,10 @@
                 "LOG_LEVEL": "info",
                 "INPUT_KAFKA_BROKERS": "mapped-dev.servicebus.windows.net:9093",
                 "OUTPUT_CLOUDEVENTOUTPUT_GRPC_URL": "localhost:9050",  
-                "BENTHOS_OS_ARGS": "-c,./kafka-sasl.yaml",
+                "ENABLE_KAFKA_SASL": "true",
                 "INPUT_SASL_USERNAME": "$ConnectionString",
-                "INPUT_SASL_PASSWORD":"**REDACTED**"
+                "INPUT_SASL_PASSWORD":"**REDACTED**",
+
             },
             "args": ["server"]      
         },

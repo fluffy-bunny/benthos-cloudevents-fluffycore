@@ -13,6 +13,10 @@ type (
 	IBenthosRegistration interface {
 		Register() error
 	}
+	IBenthosStream interface {
+		Run(ctx context.Context) (err error)
+		Stop(ctx context.Context) (err error)
+	}
 	UnimplementedIBenthosRegistration struct {
 	}
 	UnimplementedBenthosOutput struct {
