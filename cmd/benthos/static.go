@@ -16,8 +16,7 @@ input:
       period: 20s
       processors:
         - json_schema:
-            schema: "${JSON_SCHEMA}"
-        #            schema_path: "file://C:/work/mapped/benthos-cloudevents-fluffycore/config/benthos/request_units_schema.json"
+            schema: '{"$schema":"http://json-schema.org/draft-04/schema#","type":"object","properties":{"id":{"type":"string"},"source":{"type":"string"},"specVersion":{"type":"string","enum":["1.0"]},"type":{"type":"string","enum":["requestunits.v1"]},"attributes":{"type":"object","properties":{"orgid":{"type":"object","properties":{"ceString":{"type":"string"}},"required":["ceString"]},"time":{"type":"object","properties":{"ceTimestamp":{"type":"string"}},"required":["ceTimestamp"]}},"required":["orgid","partition-key","time"]},"textData":{"type":"string"}},"required":["id","source","specVersion","type","attributes","textData"]}'
         - switch:
             - check: errored()
               processors:
@@ -28,7 +27,7 @@ input:
                         check: errored()
                         processors:
                           - catch: [] # Wipe any previous error
-                          - mapping: "deadletterit(@,content())"
+                          - mapping: "errorlogit(@,content())"
                 - mapping: |
                     deleted()
 
@@ -67,5 +66,4 @@ logger:
   add_timestamp: true
   static_fields:
     "@service": benthos
-
 `

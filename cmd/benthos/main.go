@@ -56,7 +56,7 @@ func main() {
 	}
 
 	// load kafka.yml into a string
-	kafkaYaml, err := LoadYamlFile("./kafka.yaml")
+	kafkaYaml, err := LoadYamlFile("./kafka.sasl.yaml")
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error reading file")
 	}

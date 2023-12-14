@@ -10,6 +10,7 @@ type (
 	IBlobLangFuncs interface {
 		DeadLetterIt(args *bloblang.ParsedParams) (bloblang.Function, error)
 		WrapIt(args *bloblang.ParsedParams) (bloblang.Function, error)
+		ErrorLogIt(args *bloblang.ParsedParams) (bloblang.Function, error)
 	}
 )
 

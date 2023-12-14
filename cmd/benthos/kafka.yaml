@@ -22,7 +22,7 @@ input:
                         check: errored()
                         processors:
                           - catch: [] # Wipe any previous error
-                          - mapping: "deadletterit(@,content())"
+                          - mapping: "errorlogit(@,content())"
                 - mapping: |
                     deleted()
 
