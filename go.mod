@@ -18,7 +18,7 @@ require (
 	github.com/twmb/franz-go v1.15.2
 	golang.org/x/oauth2 v0.14.0
 	google.golang.org/grpc v1.59.0
-	google.golang.org/protobuf v1.31.0
+	google.golang.org/protobuf v1.32.0
 )
 
 require (
