@@ -1,0 +1,52 @@
+http:
+  enabled: false
+input:
+  kafka:
+    addresses: ["${INPUT_KAFKA_BROKERS}"]
+    topics: ["mapped-api-usage"]
+    consumer_group: "$Default2"
+    tls:
+      enabled: true
+    sasl:
+      mechanism: PLAIN
+      user: "${INPUT_SASL_USERNAME}"
+      password: "${INPUT_SASL_PASSWORD}"
+    multi_header: true
+    batching:
+      count: 3
+      period: 60s
+      processors:
+        - json_schema:
+            schema: '{"$schema":"http://json-schema.org/draft-04/schema#","type":"object","properties":{"requestTime":{"type":"string"},"requestUnits":{"type":"integer"},"orgId":{"type":"string"},"tokenId":{"type":"string"},"uniquenessToken":{"type":"string"}},"required":["requestTime","requestUnits","orgId","tokenId","uniquenessToken"]}'
+        - switch:
+            - check: errored()
+              processors:
+                - for_each:
+                    - while:
+                        at_least_once: true
+                        max_loops: 0
+                        check: errored()
+                        processors:
+                          - catch: [] # Wipe any previous error
+                          - mapping: "errorlogit(@,content())"
+                - mapping: |
+                    deleted()
+
+        - archive:
+            format: binary
+
+pipeline:
+  threads: 1
+  processors:
+    - sleep:
+        duration: 1s
+
+output:
+  justlogit:
+    max_in_flight: 64
+logger:
+  level: ${LOG_LEVEL}
+  format: json
+  add_timestamp: true
+  static_fields:
+    "@service": benthos

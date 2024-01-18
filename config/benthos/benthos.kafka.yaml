@@ -2,26 +2,43 @@ input:
   kafka:
     addresses: ["kafka:9092"]
     topics: ["cloudevents-core"]
-    consumer_group: "$Default"
+    consumer_group: "$Default2"
+    multi_header: true
     batching:
       count: 3
-      period: 20s
+      period: 60s
       processors:
+        - json_schema:
+            schema_path: "file:///schemas/request_units_schema.json"
+        - switch:
+            - check: errored()
+              processors:
+                - for_each:
+                    - while:
+                        at_least_once: true
+                        max_loops: 0
+                        check: errored()
+                        processors:
+                          - catch: [] # Wipe any previous error
+                          - mapping: "deadletterit(@,content())"
+                - mapping: |
+                    deleted()
+
         - archive:
             format: binary
 
 pipeline:
   threads: 1
   processors:
-  - sleep:
-      duration: 1s
- 
- 
+    - sleep:
+        duration: 1s
 
 output:
-  cloudevents_grpc: 
+  cloudevents_grpc:
     grpc_url: "processor:9050"
     max_in_flight: 64
+    channel: "mychannel"
+
     # auth[optional] one of: [oauth2,basic,apikey](ordered by priority)
     #--------------------------------------------------------------------
     #auth:
@@ -36,6 +53,9 @@ output:
     #  apikey:
     #    name: "x-api-key"
     #    value: "secret"
-
-
-    
+logger:
+  level: DEBUG
+  format: json
+  add_timestamp: true
+  static_fields:
+    "@service": benthos
