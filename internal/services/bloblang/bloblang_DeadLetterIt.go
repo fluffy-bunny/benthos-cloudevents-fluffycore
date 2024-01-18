@@ -122,3 +122,11 @@ func (s *service) DeadLetterIt(args *bloblang.ParsedParams) (bloblang.Function, 
 
 	}, nil
 }
+func (s *service) ErrorLogIt(args *bloblang.ParsedParams) (bloblang.Function, error) {
+	return func() (interface{}, error) {
+		data := args.AsSlice()
+		log := log.With().Caller().Logger()
+		log.Error().Interface("data", data).Msg("DeadLetterIt")
+		return make(map[string]interface{}), nil
+	}, nil
+}

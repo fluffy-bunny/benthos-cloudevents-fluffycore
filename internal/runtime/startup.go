@@ -7,7 +7,10 @@ import (
 	contracts_runtime "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/runtime"
 	services_bloblang "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/bloblang"
 	services_cloudeventoutput "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/cloudeventoutput"
+	services_justlogitoutput "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/justlogitoutput"
 	services_kafkaclient "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/kafkaclient"
+	services_kafkasaslstream "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/kafkasaslstream"
+	services_kafkastream "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/kafkastream"
 	di "github.com/fluffy-bunny/fluffy-dozm-di"
 	fluffycore_contracts_runtime "github.com/fluffy-bunny/fluffycore/contracts/runtime"
 	fluffycore_runtime "github.com/fluffy-bunny/fluffycore/runtime"
@@ -31,6 +34,12 @@ func (s *Startup) ConfigureServices(ctx context.Context, builder di.ContainerBui
 	}
 	di.AddInstance[*contracts_config.Config](builder, config)
 	services_cloudeventoutput.AddSingletonCloudEventOutput(builder)
+	services_justlogitoutput.AddSingletonJustLogItOutput(builder)
 	services_kafkaclient.AddSingletonKafkaDeadLetterClient(builder)
 	services_bloblang.AddSingletonBlobLangFuncs(builder)
+	if config.EnableKafkaSASL {
+		services_kafkasaslstream.AddSingletonIBenthosStream(builder)
+	} else {
+		services_kafkastream.AddSingletonIBenthosStream(builder)
+	}
 }
