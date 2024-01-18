@@ -240,7 +240,7 @@ protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=p
 
 ### Kafka UI
 
-[Kafka-ui](http://localhost:9090/)  
+[Kafka-ui](http://localhost:9099/)  
 
 ### KafkaCloudEventService - grpc
 
