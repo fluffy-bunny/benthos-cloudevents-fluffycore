@@ -29,6 +29,7 @@ type (
 		JWTValidators         JWTValidators                           `json:"jwtValidators" mapstructure:"JWT_VALIDATORS"`
 		DDProfilerConfig      *fluffycore_contracts_ddprofiler.Config `json:"ddProfilerConfig" mapstructure:"DD_PROFILER_CONFIG"`
 		KafkaConfig           KafkaConfig                             `json:"kafkaConfig" mapstructure:"KAFKA_CONFIG"`
+		KafkaDeadLetterConfig KafkaConfig                             `json:"kafkaDeadLetterConfig" mapstructure:"KAFKA_DEAD_LETTER_CONFIG"`
 	}
 )
 
@@ -57,6 +58,11 @@ var ConfigDefaultJSON = []byte(`
 		"SEEDS": ["localhost:9093"],
 		"GROUP": "$Default",
 		"TOPIC": "cloudevents-core"
+	},
+	"KAFKA_DEAD_LETTER_CONFIG": {
+		"SEEDS": ["localhost:9093"],
+		"GROUP": "$Default",
+		"TOPIC": "cloudevents-core-deadletter"
 	}
 
   }

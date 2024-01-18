@@ -1,0 +1,41 @@
+input:
+  kafka:
+    addresses: ["localhost:9093"]
+    topics: ["cloudevents-core"]
+    consumer_group: "$Default2"
+    multi_header: true
+    batching:
+      count: 3
+      period: 60s
+      processors:
+        - json_schema:
+            schema_path: "file://C:/work/mapped/benthos-cloudevents-fluffycore/config/benthos/request_units_schema.json"
+        - catch:
+            - log:
+                level: ERROR
+                message: "Schema validation failed due to: ${!error()}"
+            - mapping: |
+                root = wrapit(@,content())
+
+        - archive:
+            format: json_array
+
+pipeline:
+  threads: 1
+  processors:
+    - sleep:
+        duration: 1s
+
+output:
+  switch:
+    cases:
+      - check: this.error == "error"
+        output:
+          kafka:
+            addresses: ["localhost:9093"]
+            topic: "cloudevents-core-deadletter"
+      - output:
+          cloudevents_grpc:
+            grpc_url: "localhost:9050"
+            max_in_flight: 64
+            channel: "mychannel"

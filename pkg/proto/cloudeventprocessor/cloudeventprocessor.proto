@@ -34,8 +34,9 @@ message ByteBatch {
   repeated bytes messages = 1;
 }
 message ProcessCloudEventsRequest {
-    io.cloudevents.v1.CloudEventBatch batch = 1;
-    ByteBatch bad_batch = 2;
+    string channel = 1;
+    io.cloudevents.v1.CloudEventBatch batch = 2;
+    ByteBatch bad_batch = 3;
 }
 
 message ProcessCloudEventsResponse {}

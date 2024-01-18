@@ -6,8 +6,8 @@ input:
     consumer_group: "$Default"
 
     batching:
-      count: 2
-      period: 20s
+      count: 3
+      period: 60s
       processors:
         - archive:
             format: binary
@@ -15,15 +15,15 @@ input:
 pipeline:
   threads: 1
   processors:
-  - sleep:
-      duration: 1s
- 
- 
+    - sleep:
+        duration: 1s
 
 output:
-  cloudevents_grpc: 
+  cloudevents_grpc:
     grpc_url: "localhost:9050"
     max_in_flight: 64
+    channel: "mychannel"
+
     # auth[optional] one of: [oauth2,basic,apikey](ordered by priority)
     #--------------------------------------------------------------------
     #auth:
@@ -38,6 +38,3 @@ output:
     #  apikey:
     #    name: "x-api-key"
     #    value: "secret"
-
-
-    
