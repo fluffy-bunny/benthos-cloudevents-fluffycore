@@ -1,3 +1,8 @@
+package main
+
+var jsonSchema = `{"$schema":"http://json-schema.org/draft-04/schema#","type":"object","properties":{"id":{"type":"string"},"source":{"type":"string"},"specVersion":{"type":"string","enum":["1.0"]},"type":{"type":"string","enum":["requestunits.v1"]},"attributes":{"type":"object","properties":{"orgid":{"type":"object","properties":{"ceString":{"type":"string"}},"required":["ceString"]},"time":{"type":"object","properties":{"ceTimestamp":{"type":"string"}},"required":["ceTimestamp"]}},"required":["orgid","partition-key","time"]},"textData":{"type":"string"}},"required":["id","source","specVersion","type","attributes","textData"]}`
+
+var kafkaYaml = `
 http:
   enabled: false
 input:
@@ -61,3 +66,4 @@ logger:
   add_timestamp: true
   static_fields:
     "@service": benthos
+`

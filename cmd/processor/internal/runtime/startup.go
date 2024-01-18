@@ -82,7 +82,9 @@ func (s *startup) ConfigureServices(ctx context.Context, builder di.ContainerBui
 	//--------------------------------------
 	services_processor.AddCloudEventProcessorServer(builder)
 	services_kafkacloudeventservice.AddKafkaCloudEventServiceServer(builder)
-	services_kafkaclient.AddSingletonKafkaClient(builder)
+	services_kafkaclient.AddSingletonKafkaDeadLetterClient(builder)
+	services_kafkaclient.AddSingletonKafkaPublishingClient(builder)
+
 }
 func (s *startup) Configure(ctx context.Context, rootContainer di.Container, unaryServerInterceptorBuilder fluffycore_contracts_middleware.IUnaryServerInterceptorBuilder, streamServerInterceptorBuilder fluffycore_contracts_middleware.IStreamServerInterceptorBuilder) {
 	log := zerolog.Ctx(ctx).With().Str("method", "Configure").Logger()

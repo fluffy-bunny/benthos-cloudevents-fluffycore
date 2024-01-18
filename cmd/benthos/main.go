@@ -3,8 +3,13 @@ package main
 import (
 	"context"
 	"os"
+	"os/signal"
+	"regexp"
+	"syscall"
 
-	"github.com/benthosdev/benthos/v4/public/service"
+	//	benthos_service_servicetest "github.com/benthosdev/benthos/v4/public/service/servicetest"
+	//	benthos_service "github.com/benthosdev/benthos/v4/public/service"
+
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
@@ -12,6 +17,8 @@ import (
 	// Import only pure and standard io Benthos components
 	_ "github.com/benthosdev/benthos/v4/public/components/io"
 	_ "github.com/benthosdev/benthos/v4/public/components/pure"
+
+	_ "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/bloblang"
 
 	// In order to import _all_ Benthos components for third party services
 	// uncomment the following line:
@@ -35,15 +42,60 @@ func main() {
 	log.Logger = logz.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	ctx = log.Logger.WithContext(ctx)
 
-	log.Info().Msg("main")
 	startup := internal_runtime.NewStartup()
 	builder := di.Builder()
 	startup.ConfigureServices(ctx, builder)
 	internal.Container = builder.Build()
-
 	registrations := di.Get[[]contracts_benthos.IBenthosRegistration](internal.Container)
 	for _, registration := range registrations {
 		registration.Register()
 	}
-	service.RunCLI(context.Background())
+
+	waitChannel := make(chan os.Signal, 1)
+
+	// cancel context
+	ctx, cancel := context.WithCancel(ctx)
+
+	benthosStreams := di.Get[[]contracts_benthos.IBenthosStream](internal.Container)
+	for _, benthosStream := range benthosStreams {
+		go func(benthosStream contracts_benthos.IBenthosStream) {
+			err := benthosStream.Run(ctx)
+			if err != nil {
+				log.Fatal().Err(err).Msg("Error starting stream")
+			}
+		}(benthosStream)
+	}
+
+	// do my stuff
+	signal.Notify(
+		waitChannel,
+		os.Interrupt,
+		syscall.SIGINT,
+		syscall.SIGQUIT,
+		syscall.SIGTERM,
+	)
+	<-waitChannel
+	for _, benthosStream := range benthosStreams {
+		benthosStream.Stop(ctx)
+	}
+
+	cancel()
+}
+
+func LoadYamlFile(filename string) (string, error) {
+	// load kafka.yml into a string
+	kafkaYaml, err := os.ReadFile(filename)
+	if err != nil {
+		return "", err
+	}
+	return string(kafkaYaml), nil
+}
+func FixupFromEnv(str string) string {
+	re := regexp.MustCompile(`\${.*?}`)
+	matches := re.FindAllString(str, -1)
+	for _, match := range matches {
+		envVar := os.Getenv(match[2 : len(match)-1])
+		str = regexp.MustCompile(regexp.QuoteMeta(match)).ReplaceAllString(str, envVar)
+	}
+	return str
 }

@@ -1,8 +1,10 @@
 package cloudeventoutput
 
 import (
+	benthos_service "github.com/benthosdev/benthos/v4/public/service"
 	contracts_benthos "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/benthos"
 	contracts_cloudeventoutput "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/cloudeventoutput"
+	contracts_kafkaclient "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/kafkaclient"
 	proto_cloudeventprocessor "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/proto/cloudeventprocessor"
 	di "github.com/fluffy-bunny/fluffy-dozm-di"
 )
@@ -24,18 +26,24 @@ type (
 	}
 	service struct {
 		// grpcUrl: i.e. grpc://localhost:5001
-		grpcUrl                   string
+		grpcUrl string
+		// channel: is a hint to the processor.  This allows a processor to have a single app that takes all the requests.
+		channel                   string
 		oauth2config              *oauth2config
 		apiKeyConfig              *apiKeyConfig
 		basicAuthConfig           *basicAuthConfig
 		cloudEventProcessorClient proto_cloudeventprocessor.CloudEventProcessorClient
+		deadLetterClient          contracts_kafkaclient.IDeadLetterClient
+		logger                    *benthos_service.Logger
 	}
 )
 
 var stemService = &service{}
 
-func (s *service) Ctor() *service {
-	return &service{}
+func (s *service) Ctor(deadLetterClient contracts_kafkaclient.IDeadLetterClient) *service {
+	return &service{
+		deadLetterClient: deadLetterClient,
+	}
 }
 func init() {
 	var _ contracts_cloudeventoutput.ICloudEventOutput = (*service)(nil)

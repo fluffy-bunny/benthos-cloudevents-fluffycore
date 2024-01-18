@@ -9,18 +9,12 @@ import (
 	benthos_message "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/benthos/message"
 	proto_cloudeventprocessor "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/proto/cloudeventprocessor"
 	proto_cloudevents "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/proto/cloudevents"
-
 	status "github.com/gogo/status"
-	log "github.com/rs/zerolog/log"
+	zerolog_log "github.com/rs/zerolog/log"
 	codes "google.golang.org/grpc/codes"
-	"google.golang.org/protobuf/encoding/protojson"
+	protojson "google.golang.org/protobuf/encoding/protojson"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
-
-type kafkaPayload struct {
-	Headers map[string]interface{} `json:"headers"`
-	Value   map[string]interface{} `json:"value"`
-}
 
 func (s *service) ItemToCloudEvent2(ctx context.Context, bytes *[]byte) (*proto_cloudevents.CloudEvent, error) {
 	ce := &proto_cloudevents.CloudEvent{}
@@ -150,21 +144,25 @@ func (s *service) ItemToCloudEvent(ctx context.Context, item map[string]interfac
 }
 
 func (s *service) Write(ctx context.Context, message *benthos_service.Message) error {
+	log := zerolog_log.With().Caller().Logger()
+	ctx = log.WithContext(ctx)
 	content, err := message.AsBytes()
 	if err != nil {
-		log.Warn().Err(err).Msg("failed to convert message to AsBytes, don't want it anyway if that happens")
+		zerolog_log.Warn().Err(err).Msg("failed to convert message to AsBytes, don't want it anyway if that happens")
 		return nil
 	}
 	if len(content) == 0 {
-		log.Warn().Msg("empty message, don't want it anyway if that happens")
+		zerolog_log.Warn().Msg("empty message, don't want it anyway if that happens")
 		return nil
 	}
 	parts, err := benthos_message.DeserializeBytes(content)
 	if err != nil {
-		log.Warn().Err(err).Msg("failed to DeserializeBytes, don't want it anyway if that happens")
+		zerolog_log.Warn().Err(err).Msg("failed to DeserializeBytes, don't want it anyway if that happens")
 		return nil
 	}
-	processRequest := &proto_cloudeventprocessor.ProcessCloudEventsRequest{}
+	processRequest := &proto_cloudeventprocessor.ProcessCloudEventsRequest{
+		Channel: s.channel,
+	}
 
 	ceBatch := &proto_cloudevents.CloudEventBatch{}
 	badParts := [][]byte{}
@@ -182,16 +180,16 @@ func (s *service) Write(ctx context.Context, message *benthos_service.Message) e
 		processRequest.Batch = ceBatch
 	}
 	if len(badParts) > 0 {
+		// pass the bad parts to the processor
 		processRequest.BadBatch = &proto_cloudeventprocessor.ByteBatch{
 			Messages: badParts,
 		}
+
 	}
-	log.Info().Interface("ceBatch", ceBatch).Msg("ceBatch")
-	_, err = s.cloudEventProcessorClient.ProcessCloudEvents(ctx, &proto_cloudeventprocessor.ProcessCloudEventsRequest{
-		Batch: ceBatch,
-	})
+	zerolog_log.Info().Int("count", len(ceBatch.Events)).Interface("ceBatch", ceBatch).Msg("ceBatch")
+	_, err = s.cloudEventProcessorClient.ProcessCloudEvents(ctx, processRequest)
 	if err != nil {
-		log.Error().Err(err).Msg("failed to ProcessCloudEvents")
+		zerolog_log.Error().Err(err).Msg("failed to ProcessCloudEvents")
 		return err
 	}
 	return nil

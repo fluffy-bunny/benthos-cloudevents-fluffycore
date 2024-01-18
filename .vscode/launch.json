@@ -5,6 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "streams-builder",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/streams-builder",
+             
+        }, 
+        {
             "name": "processor",
             "type": "go",
             "request": "launch",
@@ -62,11 +70,47 @@
             "env": {
                 "APPLICATION_NAME": "processor",
                 "APPLICATION_ENVIRONMENT":"Development",
-                "LOG_LEVEL": "debug",     
-                
+                "LOG_LEVEL": "info",
+                "ENABLE_KAFKA_SASL": "false",
+                "INPUT_KAFKA_BROKERS": "localhost:9093",
+                "OUTPUT_CLOUDEVENTOUTPUT_GRPC_URL": "localhost:9050",  
+            },
+            "args": ["server"]      
+        },
+        {
+            "name": "benthos-kafka-sasl",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/benthos",
+            "env": {
+                "APPLICATION_NAME": "processor",
+                "APPLICATION_ENVIRONMENT":"Development",
+                "LOG_LEVEL": "info",
+                "INPUT_KAFKA_BROKERS": "mapped-dev.servicebus.windows.net:9093",
+                "OUTPUT_CLOUDEVENTOUTPUT_GRPC_URL": "localhost:9050",  
+                "ENABLE_KAFKA_SASL": "true",
+                "INPUT_SASL_USERNAME": "$ConnectionString",
+                "INPUT_SASL_PASSWORD":"**REDACTED**",
 
             },
-            "args": [ "-c", "./kafka.yaml" ]      
+            "args": ["server"]      
+        },
+        {
+            "name": "benthos-kafka.output.processing",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/benthos",
+            "env": {
+                "APPLICATION_NAME": "processor",
+                "APPLICATION_ENVIRONMENT":"Development",
+                "LOG_LEVEL": "info",
+                "INPUT_KAFKA_BROKERS": "localhost:9093",
+                "OUTPUT_CLOUDEVENTOUTPUT_GRPC_URL": "localhost:9050",  
+
+            },
+            "args": [ "-c", "./kafka.output.processing.yaml" ]      
         },
     ]
 }

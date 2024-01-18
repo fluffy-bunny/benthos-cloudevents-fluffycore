@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	contracts_config "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/contracts/config"
+	contracts_kafkaclient "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/contracts/kafkaclient"
 	utils_cloudevents "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/utils/cloudevents"
 	kafka_franz "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/kafka_franz/v2"
 	proto_kafkacloudevent "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/proto/kafkacloudevent"
@@ -14,23 +15,23 @@ import (
 	kgo "github.com/twmb/franz-go/pkg/kgo"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
+	protojson "google.golang.org/protobuf/encoding/protojson"
 )
 
 type (
 	service struct {
 		proto_kafkacloudevent.UnimplementedKafkaCloudEventServiceServer
-		config      *contracts_config.Config
-		KafkaClient *kgo.Client
+		config           *contracts_config.Config
+		publishingClient contracts_kafkaclient.IPublishingClient
 	}
 )
 
 func AddKafkaCloudEventServiceServer(builder di.ContainerBuilder) {
 	proto_kafkacloudevent.AddKafkaCloudEventServiceServer[proto_kafkacloudevent.IKafkaCloudEventServiceServer](builder,
-		func(config *contracts_config.Config, kafkaClient *kgo.Client) (proto_kafkacloudevent.IKafkaCloudEventServiceServer, error) {
+		func(config *contracts_config.Config, publishingClient contracts_kafkaclient.IPublishingClient) (proto_kafkacloudevent.IKafkaCloudEventServiceServer, error) {
 			s := &service{
-				config:      config,
-				KafkaClient: kafkaClient,
+				config:           config,
+				publishingClient: publishingClient,
 			}
 			return s, nil
 		})
@@ -94,7 +95,8 @@ func (s *service) SubmitCloudEvents(ctx context.Context, request *proto_kafkaclo
 			record.Key = []byte(keyHintS)
 			delete(event.Attributes, "partition-key")
 		}
-		s.KafkaClient.Produce(ctx, record, func(_ *kgo.Record, err error) {
+		kafkaClient := s.publishingClient.GetClient()
+		kafkaClient.Produce(ctx, record, func(_ *kgo.Record, err error) {
 			defer wg.Done()
 			if err != nil {
 				log.Error().Err(err).Msg("failed to produce")
