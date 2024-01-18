@@ -6,8 +6,8 @@ input:
     consumer_group: "$Default"
 
     batching:
-      count: 2
-      period: 20s
+      count: 3
+      period: 60s
       processors:
         - archive:
             format: binary

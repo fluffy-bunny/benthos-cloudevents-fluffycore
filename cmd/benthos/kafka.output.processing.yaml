@@ -6,7 +6,7 @@ input:
     multi_header: true
     batching:
       count: 3
-      period: 20s
+      period: 60s
       processors:
         - json_schema:
             schema_path: "file://C:/work/mapped/benthos-cloudevents-fluffycore/config/benthos/request_units_schema.json"

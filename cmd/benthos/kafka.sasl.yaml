@@ -14,7 +14,7 @@ input:
     multi_header: true
     batching:
       count: 3
-      period: 20s
+      period: 60s
       processors:
         - json_schema:
             schema: '{"$schema":"http://json-schema.org/draft-04/schema#","type":"object","properties":{"requestTime":{"type":"string"},"requestUnits":{"type":"integer"},"orgId":{"type":"string"},"tokenId":{"type":"string"},"uniquenessToken":{"type":"string"}},"required":["requestTime","requestUnits","orgId","tokenId","uniquenessToken"]}'

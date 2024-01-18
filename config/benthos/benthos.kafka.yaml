@@ -6,7 +6,7 @@ input:
     multi_header: true
     batching:
       count: 3
-      period: 20s
+      period: 60s
       processors:
         - json_schema:
             schema_path: "file:///schemas/request_units_schema.json"
@@ -58,4 +58,4 @@ logger:
   format: json
   add_timestamp: true
   static_fields:
-    '@service': benthos
+    "@service": benthos
