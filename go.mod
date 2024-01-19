@@ -1,6 +1,6 @@
 module github.com/fluffy-bunny/benthos-cloudevents-fluffycore
 
-go 1.21.3
+go 1.21.6
 
 //replace github.com/fluffy-bunny/fluffycore => ../fluffycore
 
