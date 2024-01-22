@@ -111,10 +111,10 @@ github.com/felixge/httpsnoop v1.0.3 h1:s/nj+GCswXYzN5v2DpNMuMQYe+0DDwt5WVCU6CWBd
 github.com/felixge/httpsnoop v1.0.3/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
 github.com/fluffy-bunny/fluffy-dozm-di v0.0.1 h1:b+F9b4edbSVn9Oio4efo62QJNspVsdmhp1KO3dxVoNQ=
 github.com/fluffy-bunny/fluffy-dozm-di v0.0.1/go.mod h1:4/ZqTQ4Nwzq54c1i42mvEOabnMBJHDruBb2817viqKk=
-github.com/fluffy-bunny/fluffycore v1.0.54 h1:j0c8avrsSpBjxr/z4l0FOHB7w2NjlPzo3IOYAB0aQxE=
-github.com/fluffy-bunny/fluffycore v1.0.54/go.mod h1:tJCNEI07tLGI5WZ6d+cV7qyJl0oHmoobZv8vwvlQLyA=
-github.com/fluffy-bunny/viperEx v0.0.27 h1:wm7cjbvwmXxlOxdAfxeToAmGDK0mt2Qcec+Xr9Tcrx4=
-github.com/fluffy-bunny/viperEx v0.0.27/go.mod h1:yvFX7/+PN4rEr+cZC4lb7CegtzGahZjzUcTBxwQ2THM=
+github.com/fluffy-bunny/fluffycore v1.0.57 h1:WWkmcKcxXugJqkqimObllIzZQswaFXpCABUdGMwf7aU=
+github.com/fluffy-bunny/fluffycore v1.0.57/go.mod h1:qbRzyJ/uQ1t0ODnVq3kZ6j/WuR6HbHOzQYVkTTrSsTc=
+github.com/fluffy-bunny/viperEx v0.0.29 h1:nhttpPyXYOuv7vjqTO2bz4Mm++ZntsPkv/OazQyV2Jc=
+github.com/fluffy-bunny/viperEx v0.0.29/go.mod h1:y/vzpS5SQoCdc17bNglmKDX+Vz0w3BHfBCoALQZPQiA=
 github.com/form3tech-oss/jwt-go v3.2.5+incompatible h1:/l4kBbb4/vGSsdtB5nUe8L7B9mImVMaBPw9L/0TBHU8=
 github.com/form3tech-oss/jwt-go v3.2.5+incompatible/go.mod h1:pbq4aXjuKjdthFRnoDwaVPLA+WlJuPGy+QneDUgJi2k=
 github.com/fortytw2/leaktest v1.3.0 h1:u8491cBMTQ8ft8aeV+adlcytMZylmA5nnwwkRZjI8vw=

@@ -8,7 +8,7 @@ require (
 	github.com/benthosdev/benthos/v4 v4.24.0
 	github.com/cloudevents/sdk-go/v2 v2.14.0
 	github.com/fluffy-bunny/fluffy-dozm-di v0.0.1
-	github.com/fluffy-bunny/fluffycore v1.0.54
+	github.com/fluffy-bunny/fluffycore v1.0.57
 	github.com/gogo/status v1.1.1
 	github.com/google/uuid v1.5.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
@@ -53,7 +53,7 @@ require (
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/felixge/fgprof v0.9.3 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
-	github.com/fluffy-bunny/viperEx v0.0.27 // indirect
+	github.com/fluffy-bunny/viperEx v0.0.29 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-logr/logr v1.3.0 // indirect
