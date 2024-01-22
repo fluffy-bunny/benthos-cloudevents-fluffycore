@@ -6,7 +6,7 @@ go 1.21.6
 
 require (
 	github.com/benthosdev/benthos/v4 v4.24.0
-	github.com/cloudevents/sdk-go/v2 v2.14.0
+	github.com/cloudevents/sdk-go/v2 v2.15.0
 	github.com/fluffy-bunny/fluffy-dozm-di v0.0.1
 	github.com/fluffy-bunny/fluffycore v1.0.54
 	github.com/gogo/status v1.1.1
