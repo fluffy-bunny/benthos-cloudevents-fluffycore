@@ -26,15 +26,16 @@ type (
 	}
 )
 
+var stemService = (*service)(nil)
+
+func (s *service) Ctor(config *contracts_config.Config, publishingClient contracts_kafkaclient.IPublishingClient) proto_kafkacloudevent.IFluffyCoreKafkaCloudEventServiceServer {
+	return &service{
+		config:           config,
+		publishingClient: publishingClient,
+	}
+}
 func AddKafkaCloudEventServiceServer(builder di.ContainerBuilder) {
-	proto_kafkacloudevent.AddKafkaCloudEventServiceServer[proto_kafkacloudevent.IKafkaCloudEventServiceServer](builder,
-		func(config *contracts_config.Config, publishingClient contracts_kafkaclient.IPublishingClient) (proto_kafkacloudevent.IKafkaCloudEventServiceServer, error) {
-			s := &service{
-				config:           config,
-				publishingClient: publishingClient,
-			}
-			return s, nil
-		})
+	proto_kafkacloudevent.AddKafkaCloudEventServiceServer(builder, stemService.Ctor)
 }
 
 func (s *service) validateCloudEvent(request *proto_kafkacloudevent.SubmitCloudEventsRequest) error {
