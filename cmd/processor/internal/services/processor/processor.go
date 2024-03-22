@@ -23,14 +23,16 @@ type (
 	}
 )
 
+var stemService = (*service)(nil)
+
+func (s *service) Ctor(config *contracts_config.Config, deadLetterClient contracts_kafkaclient.IDeadLetterClient) proto_cloudeventprocessor.IFluffyCoreCloudEventProcessorServer {
+	return &service{
+		config:           config,
+		deadLetterClient: deadLetterClient,
+	}
+}
 func AddCloudEventProcessorServer(builder di.ContainerBuilder) {
-	proto_cloudeventprocessor.AddCloudEventProcessorServer[proto_cloudeventprocessor.ICloudEventProcessorServer](builder,
-		func(config *contracts_config.Config, deadLetterClient contracts_kafkaclient.IDeadLetterClient) proto_cloudeventprocessor.ICloudEventProcessorServer {
-			return &service{
-				config:           config,
-				deadLetterClient: deadLetterClient,
-			}
-		})
+	proto_cloudeventprocessor.AddCloudEventProcessorServer(builder, stemService.Ctor)
 }
 func (s *service) validateProcessCloudEventsRequest(request *proto_cloudeventprocessor.ProcessCloudEventsRequest) error {
 	if request == nil {

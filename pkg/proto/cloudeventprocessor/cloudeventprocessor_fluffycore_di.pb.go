@@ -11,37 +11,37 @@ import (
 	grpc "google.golang.org/grpc"
 )
 
-// ICloudEventProcessorServer defines the grpc server
-type ICloudEventProcessorServer interface {
+// IFluffyCoreCloudEventProcessorServer defines the grpc server
+type IFluffyCoreCloudEventProcessorServer interface {
 	CloudEventProcessorServer
 }
 
-type UnimplementedCloudEventProcessorServerEndpointRegistration struct {
+type UnimplementedFluffyCoreCloudEventProcessorServerEndpointRegistration struct {
 }
 
-func (UnimplementedCloudEventProcessorServerEndpointRegistration) RegisterHandler(gwmux *runtime.ServeMux, conn *grpc.ClientConn) {
+func (UnimplementedFluffyCoreCloudEventProcessorServerEndpointRegistration) RegisterFluffyCoreHandler(gwmux *runtime.ServeMux, conn *grpc.ClientConn) {
 }
 
 // CloudEventProcessorFluffyCoreServer defines the grpc server truct
 type CloudEventProcessorFluffyCoreServer struct {
 	UnimplementedCloudEventProcessorServer
-	UnimplementedCloudEventProcessorServerEndpointRegistration
+	UnimplementedFluffyCoreCloudEventProcessorServerEndpointRegistration
 }
 
-// Register the server with grpc
-func (srv *CloudEventProcessorFluffyCoreServer) Register(s *grpc.Server) {
+// RegisterFluffyCoreGRPCService the server with grpc
+func (srv *CloudEventProcessorFluffyCoreServer) RegisterFluffyCoreGRPCService(s *grpc.Server) {
 	RegisterCloudEventProcessorServer(s, srv)
 }
 
 // AddCloudEventProcessorServerWithExternalRegistration adds the fluffycore aware grpc server and external registration service.  Mainly used for grpc-gateway
-func AddCloudEventProcessorServerWithExternalRegistration[T ICloudEventProcessorServer](cb fluffy_dozm_di.ContainerBuilder, ctor any, register func() endpoint.IEndpointRegistration) {
+func AddCloudEventProcessorServerWithExternalRegistration(cb fluffy_dozm_di.ContainerBuilder, ctor any, register func() endpoint.IEndpointRegistration) {
 	fluffy_dozm_di.AddSingleton[endpoint.IEndpointRegistration](cb, register)
-	fluffy_dozm_di.AddScoped[ICloudEventProcessorServer](cb, ctor)
+	fluffy_dozm_di.AddScoped[IFluffyCoreCloudEventProcessorServer](cb, ctor)
 }
 
 // AddCloudEventProcessorServer adds the fluffycore aware grpc server
-func AddCloudEventProcessorServer[T ICloudEventProcessorServer](cb fluffy_dozm_di.ContainerBuilder, ctor any) {
-	AddCloudEventProcessorServerWithExternalRegistration[ICloudEventProcessorServer](cb, ctor, func() endpoint.IEndpointRegistration {
+func AddCloudEventProcessorServer(cb fluffy_dozm_di.ContainerBuilder, ctor any) {
+	AddCloudEventProcessorServerWithExternalRegistration(cb, ctor, func() endpoint.IEndpointRegistration {
 		return &CloudEventProcessorFluffyCoreServer{}
 	})
 }
@@ -49,6 +49,6 @@ func AddCloudEventProcessorServer[T ICloudEventProcessorServer](cb fluffy_dozm_d
 // ProcessCloudEvents...
 func (s *CloudEventProcessorFluffyCoreServer) ProcessCloudEvents(ctx context.Context, request *ProcessCloudEventsRequest) (*ProcessCloudEventsResponse, error) {
 	requestContainer := dicontext.GetRequestContainer(ctx)
-	downstreamService := fluffy_dozm_di.Get[ICloudEventProcessorServer](requestContainer)
+	downstreamService := fluffy_dozm_di.Get[IFluffyCoreCloudEventProcessorServer](requestContainer)
 	return downstreamService.ProcessCloudEvents(ctx, request)
 }

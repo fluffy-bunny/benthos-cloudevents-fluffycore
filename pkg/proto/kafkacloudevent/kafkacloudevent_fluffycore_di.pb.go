@@ -11,37 +11,37 @@ import (
 	grpc "google.golang.org/grpc"
 )
 
-// IKafkaCloudEventServiceServer defines the grpc server
-type IKafkaCloudEventServiceServer interface {
+// IFluffyCoreKafkaCloudEventServiceServer defines the grpc server
+type IFluffyCoreKafkaCloudEventServiceServer interface {
 	KafkaCloudEventServiceServer
 }
 
-type UnimplementedKafkaCloudEventServiceServerEndpointRegistration struct {
+type UnimplementedFluffyCoreKafkaCloudEventServiceServerEndpointRegistration struct {
 }
 
-func (UnimplementedKafkaCloudEventServiceServerEndpointRegistration) RegisterHandler(gwmux *runtime.ServeMux, conn *grpc.ClientConn) {
+func (UnimplementedFluffyCoreKafkaCloudEventServiceServerEndpointRegistration) RegisterFluffyCoreHandler(gwmux *runtime.ServeMux, conn *grpc.ClientConn) {
 }
 
 // KafkaCloudEventServiceFluffyCoreServer defines the grpc server truct
 type KafkaCloudEventServiceFluffyCoreServer struct {
 	UnimplementedKafkaCloudEventServiceServer
-	UnimplementedKafkaCloudEventServiceServerEndpointRegistration
+	UnimplementedFluffyCoreKafkaCloudEventServiceServerEndpointRegistration
 }
 
-// Register the server with grpc
-func (srv *KafkaCloudEventServiceFluffyCoreServer) Register(s *grpc.Server) {
+// RegisterFluffyCoreGRPCService the server with grpc
+func (srv *KafkaCloudEventServiceFluffyCoreServer) RegisterFluffyCoreGRPCService(s *grpc.Server) {
 	RegisterKafkaCloudEventServiceServer(s, srv)
 }
 
 // AddKafkaCloudEventServiceServerWithExternalRegistration adds the fluffycore aware grpc server and external registration service.  Mainly used for grpc-gateway
-func AddKafkaCloudEventServiceServerWithExternalRegistration[T IKafkaCloudEventServiceServer](cb fluffy_dozm_di.ContainerBuilder, ctor any, register func() endpoint.IEndpointRegistration) {
+func AddKafkaCloudEventServiceServerWithExternalRegistration(cb fluffy_dozm_di.ContainerBuilder, ctor any, register func() endpoint.IEndpointRegistration) {
 	fluffy_dozm_di.AddSingleton[endpoint.IEndpointRegistration](cb, register)
-	fluffy_dozm_di.AddScoped[IKafkaCloudEventServiceServer](cb, ctor)
+	fluffy_dozm_di.AddScoped[IFluffyCoreKafkaCloudEventServiceServer](cb, ctor)
 }
 
 // AddKafkaCloudEventServiceServer adds the fluffycore aware grpc server
-func AddKafkaCloudEventServiceServer[T IKafkaCloudEventServiceServer](cb fluffy_dozm_di.ContainerBuilder, ctor any) {
-	AddKafkaCloudEventServiceServerWithExternalRegistration[IKafkaCloudEventServiceServer](cb, ctor, func() endpoint.IEndpointRegistration {
+func AddKafkaCloudEventServiceServer(cb fluffy_dozm_di.ContainerBuilder, ctor any) {
+	AddKafkaCloudEventServiceServerWithExternalRegistration(cb, ctor, func() endpoint.IEndpointRegistration {
 		return &KafkaCloudEventServiceFluffyCoreServer{}
 	})
 }
@@ -49,6 +49,6 @@ func AddKafkaCloudEventServiceServer[T IKafkaCloudEventServiceServer](cb fluffy_
 // SubmitCloudEvents...
 func (s *KafkaCloudEventServiceFluffyCoreServer) SubmitCloudEvents(ctx context.Context, request *SubmitCloudEventsRequest) (*SubmitCloudEventsResponse, error) {
 	requestContainer := dicontext.GetRequestContainer(ctx)
-	downstreamService := fluffy_dozm_di.Get[IKafkaCloudEventServiceServer](requestContainer)
+	downstreamService := fluffy_dozm_di.Get[IFluffyCoreKafkaCloudEventServiceServer](requestContainer)
 	return downstreamService.SubmitCloudEvents(ctx, request)
 }
