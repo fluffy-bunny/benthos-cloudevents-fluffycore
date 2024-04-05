@@ -14,8 +14,7 @@ import (
 type (
 	service struct {
 		contracts_centrifuge.UnimplementedSubscriptionHandlers
-		// grpcUrl: i.e. grpc://localhost:5001
-		endpoint string
+
 		// channel: is a hint to the processor.  This allows a processor to have a single app that takes all the requests.
 		channel                string
 		logger                 *benthos_service.Logger

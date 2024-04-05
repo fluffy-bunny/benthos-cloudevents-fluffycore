@@ -11,6 +11,7 @@ import (
 	services_bloblang "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/bloblang"
 	services_centrifugeclient "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/centrifugeclient"
 	services_centrifugeinput "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/centrifugeinput"
+	services_centrifugestream "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/centrifugestream"
 	services_cloudeventoutput "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/cloudeventoutput"
 	services_justlogitoutput "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/justlogitoutput"
 	services_kafkaclient "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/kafkaclient"
@@ -75,11 +76,15 @@ func (s *Startup) ConfigureServices(ctx context.Context, builder di.ContainerBui
 	services_justlogitoutput.AddSingletonJustLogItOutput(builder)
 	services_kafkaclient.AddSingletonKafkaDeadLetterClient(builder)
 	services_bloblang.AddSingletonBlobLangFuncs(builder)
-	if config.EnableKafkaSASL {
-		services_kafkasaslstream.AddSingletonIBenthosStream(builder)
-	} else {
-		services_kafkastream.AddSingletonIBenthosStream(builder)
+	if false {
+		if config.EnableKafkaSASL {
+			services_kafkasaslstream.AddSingletonIBenthosStream(builder)
+		} else {
+			services_kafkastream.AddSingletonIBenthosStream(builder)
+		}
+
 	}
+	services_centrifugestream.AddSingletonIBenthosStream(builder)
 	services_storage_inmemory_CentrifugeInputStorage.AddSingletonCentrifugeInputStorage(builder)
 }
 
