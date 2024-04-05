@@ -80,7 +80,7 @@ func (s *Startup) ConfigureServices(ctx context.Context, builder di.ContainerBui
 	} else {
 		services_kafkastream.AddSingletonIBenthosStream(builder)
 	}
-	services_storage_inmemory_CentrifugeInputStorage.AddSingletonCloudEventOutput(builder)
+	services_storage_inmemory_CentrifugeInputStorage.AddSingletonCentrifugeInputStorage(builder)
 }
 
 // onLoadMastodonConfig will load a file and merge it over the default config

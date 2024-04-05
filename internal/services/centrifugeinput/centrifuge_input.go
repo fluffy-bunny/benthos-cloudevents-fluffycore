@@ -43,7 +43,5 @@ func init() {
 	var _ contracts_benthos.IBenthosRegistration = (*service)(nil)
 }
 func AddSingletonCentrifugeInput(cb di.ContainerBuilder) {
-	di.AddSingleton[*service](cb, stemService.Ctor,
-		contracts_benthos.TypeIBenthosRegistration,
-	)
+	di.AddSingleton[contracts_benthos.IBenthosRegistration](cb, stemService.Ctor)
 }

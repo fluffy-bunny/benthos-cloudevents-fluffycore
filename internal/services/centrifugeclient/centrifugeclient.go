@@ -23,30 +23,35 @@ type (
 var stemService = (*service)(nil)
 
 func (s *service) Ctor(config *contracts_config.Config) contracts_centrifuge.ICentrifugeClient {
+
 	client := centrifuge.NewJsonClient(
-		s.config.CentrifugeConfig.Endpoint,
+		config.CentrifugeConfig.Endpoint,
 		centrifuge.Config{
 			// Sending token makes it work with Centrifugo JWT auth (with `secret` HMAC key).
 			Token: connToken("49", 0),
 		},
 	)
-	// register for all the events
-	client.OnConnected(s.OnConnectedHandler)
-	client.OnConnecting(s.OnConnectingHandler)
-	client.OnDisconnected(s.OnDisconnectHandler)
-	client.OnError(s.OnErrorHandler)
-	client.OnJoin(s.OnServerJoinHandler)
-	client.OnLeave(s.OnServerLeaveHandler)
-	client.OnMessage(s.OnMessageHandler)
-	client.OnPublication(s.OnServerPublicationHandler)
-	client.OnSubscribed(s.OnServerSubscribedHandler)
-	client.OnSubscribing(s.OnServerSubscribingHandler)
-	client.OnUnsubscribed(s.OnServerUnsubscribedHandler)
 
-	return &service{
+	svc := &service{
 		config: config,
 		client: client,
 	}
+
+	// register for all the events
+	client.OnConnected(svc.OnConnectedHandler)
+	client.OnConnecting(svc.OnConnectingHandler)
+	client.OnDisconnected(svc.OnDisconnectHandler)
+	client.OnError(svc.OnErrorHandler)
+	client.OnJoin(svc.OnServerJoinHandler)
+	client.OnLeave(svc.OnServerLeaveHandler)
+	client.OnMessage(svc.OnMessageHandler)
+	client.OnPublication(svc.OnServerPublicationHandler)
+	client.OnSubscribed(svc.OnServerSubscribedHandler)
+	client.OnSubscribing(svc.OnServerSubscribingHandler)
+	client.OnUnsubscribed(svc.OnServerUnsubscribedHandler)
+
+	return svc
+
 }
 func init() {
 	var _ contracts_centrifuge.ICentrifugeClient = (*service)(nil)

@@ -28,7 +28,7 @@ func (s *service) Ctor() contracts_storage.ICentrifugeInputStorage {
 	return &service{}
 }
 
-func AddSingletonCloudEventOutput(cb di.ContainerBuilder) {
+func AddSingletonCentrifugeInputStorage(cb di.ContainerBuilder) {
 	di.AddSingleton[contracts_storage.ICentrifugeInputStorage](cb, stemService.Ctor)
 }
 func (s *service) validateStoreStreamPostitionRequest(request *contracts_storage.StoreStreamPostitionRequest) error {
