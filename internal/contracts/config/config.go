@@ -6,31 +6,49 @@ import (
 
 type (
 	KafkaConfig struct {
-		Seeds []string `json:"seeds" mapstructure:"SEEDS"`
-		Group string   `json:"group" mapstructure:"GROUP"`
-		Topic string   `json:"topic" mapstructure:"TOPIC"`
+		Seeds []string `json:"seeds"`
+		Group string   `json:"group"`
+		Topic string   `json:"topic"`
+	}
+	InitialConfig struct {
+		ConfigFiles ConfigFiles `json:"configFiles"`
+	}
+	ConfigFiles struct {
+		RootPath string `json:"rootPath"`
+	}
+
+	CentrifugeConfig struct {
+		Endpoint string `json:"endpoint"`
 	}
 	Config struct {
-		DDProfilerConfig      *fluffycore_contracts_ddprofiler.Config `json:"ddProfilerConfig" mapstructure:"DD_PROFILER_CONFIG"`
-		KafkaDeadLetterConfig *KafkaConfig                            `json:"kafkaDeadLetterConfig" mapstructure:"KAFKA_DEAD_LETTER_CONFIG"`
-		EnableKafkaSASL       bool                                    `json:"enableKafkaSASL" mapstructure:"ENABLE_KAFKA_SASL"`
+		DDProfilerConfig      *fluffycore_contracts_ddprofiler.Config `json:"ddProfilerConfig"`
+		KafkaDeadLetterConfig *KafkaConfig                            `json:"kafkaDeadLetterConfig"`
+		EnableKafkaSASL       bool                                    `json:"enableKafkaSASL"`
+		ConfigFiles           *ConfigFiles                            `json:"configFiles"`
+		CentrifugeConfig      *CentrifugeConfig                       `json:"centrifugeConfig"`
 	}
 )
 
 // ConfigDefaultJSON default json
 var ConfigDefaultJSON = []byte(`
 {
-	"ENABLE_KAFKA_SASL": false,
-	"DD_PROFILER_CONFIG": {
-		"ENABLED": false,
-		"SERVICE_NAME": "in-environment",
-		"APPLICATION_ENVIRONMENT": "in-environment",
-		"VERSION": "1.0.0"
+	"enableKafkaSASL": false,
+	"ddProfilerConfig": {
+		"enabled": false,
+		"serviceName": "in-environment",
+		"applicationEnvironment": "in-environment",
+		"version": "1.0.0"
 	},
-	"KAFKA_DEAD_LETTER_CONFIG": {
-		"SEEDS": ["localhost:9093"],
-		"GROUP": "$Default",
-		"TOPIC": "cloudevents-core-deadletter"
+	"kafkaDeadLetterConfig": {
+		"seeds": ["localhost:9093"],
+		"group": "$Default",
+		"topic": "cloudevents-core-deadletter"
+	},
+	"configFiles": {
+		"rootPath": ""
+	},
+	"centrifugeConfig": {
+		"endpoint": "ws://localhost:8000/connection/websocket"
 	}
 
   }

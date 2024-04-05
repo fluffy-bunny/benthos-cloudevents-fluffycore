@@ -74,6 +74,7 @@
                 "ENABLE_KAFKA_SASL": "false",
                 "INPUT_KAFKA_BROKERS": "localhost:9093",
                 "OUTPUT_CLOUDEVENTOUTPUT_GRPC_URL": "localhost:9050",  
+                "centrifugeConfig__endpoint": "ws://localhost:8079/connection/websocket",
             },
             "args": ["server"]      
         },
