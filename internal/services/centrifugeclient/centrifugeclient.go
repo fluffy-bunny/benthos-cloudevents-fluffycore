@@ -3,6 +3,7 @@ package centrifugeclient
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	centrifuge "github.com/centrifugal/centrifuge-go"
 	contracts_centrifuge "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/centrifuge"
@@ -17,59 +18,74 @@ type (
 
 		config *contracts_config.Config
 		client *centrifuge.Client
+		mutex  sync.Mutex
 	}
 )
 
 var stemService = (*service)(nil)
 
-func (s *service) Ctor(config *contracts_config.Config) contracts_centrifuge.ICentrifugeClient {
-
-	client := centrifuge.NewJsonClient(
-		config.CentrifugeConfig.Endpoint,
-		centrifuge.Config{
-			// Sending token makes it work with Centrifugo JWT auth (with `secret` HMAC key).
-			Token: connToken("49", 0),
-		},
-	)
-
-	svc := &service{
-		config: config,
-		client: client,
-	}
-
-	// register for all the events
-	client.OnConnected(svc.OnConnectedHandler)
-	client.OnConnecting(svc.OnConnectingHandler)
-	client.OnDisconnected(svc.OnDisconnectHandler)
-	client.OnError(svc.OnErrorHandler)
-	client.OnJoin(svc.OnServerJoinHandler)
-	client.OnLeave(svc.OnServerLeaveHandler)
-	client.OnMessage(svc.OnMessageHandler)
-	client.OnPublication(svc.OnServerPublicationHandler)
-	client.OnSubscribed(svc.OnServerSubscribedHandler)
-	client.OnSubscribing(svc.OnServerSubscribingHandler)
-	client.OnUnsubscribed(svc.OnServerUnsubscribedHandler)
-
-	return svc
-
-}
 func init() {
 	var _ contracts_centrifuge.ICentrifugeClient = (*service)(nil)
 
 }
+
+func (s *service) Ctor(config *contracts_config.Config) contracts_centrifuge.ICentrifugeClient {
+	svc := &service{
+		config: config,
+	}
+	return svc
+}
+
 func AddSingletonCentrifugeClient(cb di.ContainerBuilder) {
 	di.AddSingleton[contracts_centrifuge.ICentrifugeClient](cb, stemService.Ctor)
 }
 
-func (s *service) GetClient() *centrifuge.Client {
-	return s.client
+func (s *service) GetClient() (*centrifuge.Client, error) {
+	//--~--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	//--~--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--
+	if s.client == nil {
+
+		client := centrifuge.NewJsonClient(
+			s.config.CentrifugeConfig.Endpoint,
+			centrifuge.Config{
+				// Sending token makes it work with Centrifugo JWT auth (with `secret` HMAC key).
+				Token: connToken("49", 0),
+			},
+		)
+		// register for all the events
+		client.OnConnected(s.OnConnectedHandler)
+		client.OnConnecting(s.OnConnectingHandler)
+		client.OnDisconnected(s.OnDisconnectHandler)
+		client.OnError(s.OnErrorHandler)
+		client.OnJoin(s.OnServerJoinHandler)
+		client.OnLeave(s.OnServerLeaveHandler)
+		client.OnMessage(s.OnMessageHandler)
+		client.OnPublication(s.OnServerPublicationHandler)
+		client.OnSubscribed(s.OnServerSubscribedHandler)
+		client.OnSubscribing(s.OnServerSubscribingHandler)
+		client.OnUnsubscribed(s.OnServerUnsubscribedHandler)
+		err := client.Connect()
+		if err != nil {
+			return nil, err
+		}
+		s.client = client
+	}
+	return s.client, nil
 }
 func (s *service) Dispose(ctx context.Context) error {
 	return s.Close(ctx)
 }
 func (s *service) Close(ctx context.Context) error {
+	//--~--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	//--~--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--
+
 	if s.client != nil {
 		s.client.Close()
+		s.client = nil
 	}
 	return nil
 }

@@ -16,7 +16,10 @@ const (
 
 var configSpec = benthos_service.NewConfigSpec().
 	Summary("Creates an input of a centrifuge channel.").
-	Field(benthos_service.NewStringField(FieldName_channel))
+	Field(benthos_service.NewStringField(FieldName_channel)).
+	Field(benthos_service.NewBatchPolicyField("batching").
+		Description("Allows you to configure a [batching policy](/docs/configuration/batching) that applies to individual topic partitions in order to batch messages together before flushing them for processing. Batching can be beneficial for performance as well as useful for windowed processing, and doing so this way preserves the ordering of topic partitions.").
+		Advanced())
 
 const useGlobalSkipFrameCount = math.MinInt32
 

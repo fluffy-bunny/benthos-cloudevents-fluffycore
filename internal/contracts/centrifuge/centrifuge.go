@@ -10,7 +10,7 @@ type (
 		fluffycore_contracts_common.ICloser
 		fluffycore_contracts_common.IDispose
 
-		GetClient() *centrifuge.Client
+		GetClient() (*centrifuge.Client, error)
 	}
 
 	IClientHandlers interface {
@@ -54,8 +54,8 @@ func (s UnimplementedClientHandlers) OnServerLeaveHandler(centrifuge.ServerLeave
 func (s UnimplementedClientHandlers) OnErrorHandler(centrifuge.ErrorEvent)             {}
 
 func (s UnimplementedSubscriptionHandlers) OnPublicationHandler(centrifuge.PublicationEvent) {}
-func (s UnimplementedSubscriptionHandlers) OnJoinHandler(centrifuge.JoinEvent)          {}
-func (s UnimplementedSubscriptionHandlers) OnLeaveHandler(centrifuge.LeaveEvent)        {}
+func (s UnimplementedSubscriptionHandlers) OnJoinHandler(centrifuge.JoinEvent)               {}
+func (s UnimplementedSubscriptionHandlers) OnLeaveHandler(centrifuge.LeaveEvent)             {}
 func (s UnimplementedSubscriptionHandlers) OnUnsubscribedHandler(centrifuge.UnsubscribedEvent) {
 }
 func (s UnimplementedSubscriptionHandlers) OnSubscribedHandler(centrifuge.SubscribedEvent)   {}

@@ -56,38 +56,23 @@ http:
   enabled: false
 input:
   centrifuge_input:
-    channel: "chat:index"
-
+    channel: chat:index
+    batching:
+      count: 3
+      period: 20s
 pipeline:
   threads: 1
   processors:
     - sleep:
         duration: 1s
-
 output:
-  cloudevents_grpc:
-    grpc_url: "${OUTPUT_CLOUDEVENTOUTPUT_GRPC_URL}"
+  justlogit:
     max_in_flight: 64
-    channel: "mychannel"
-
-    # auth[optional] one of: [oauth2,basic,apikey](ordered by priority)
-    #--------------------------------------------------------------------
-    #auth:
-    #  basic:
-    #    user_name: "admin"
-    #    password: "password"
-    #  oauth2:
-    #    client_id: "my_client_id"
-    #    client_secret: "secret"
-    #    token_endpoint: "https://example.com/oauth2/token"
-    #    scopes: ["scope1", "scope2"]
-    #  apikey:
-    #    name: "x-api-key"
-    #    value: "secret"
 logger:
   level: ${LOG_LEVEL}
   format: json
   add_timestamp: true
   static_fields:
     "@service": benthos.kafka
+
 `
