@@ -1,0 +1,23 @@
+{
+  "token_hmac_secret_key": "my_secret",
+  "api_key": "my_api_key",
+  "admin_password": "password",
+  "admin_secret": "secret",
+  "admin": true,
+  "allowed_origins": ["http://localhost:3000"],
+  "allow_subscribe_for_client": true,
+  "namespaces": [
+    {
+      "name": "chat",
+      "presence": true,
+      "join_leave": true,
+      "history_size": 10,
+      "history_ttl": "300s",
+      "force_positioning": true,
+      "force_recovery": true,
+      "allow_history_for_subscriber": true,
+      "allow_publish_for_client": true,
+      "allow_subscribe_for_client": true
+    }
+  ]
+}
