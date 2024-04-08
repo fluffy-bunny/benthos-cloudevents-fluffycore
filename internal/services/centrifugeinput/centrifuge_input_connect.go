@@ -7,6 +7,7 @@ import (
 	benthos_service "github.com/benthosdev/benthos/v4/public/service"
 	centrifuge "github.com/centrifugal/centrifuge-go"
 	contracts_storage "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/storage"
+	"github.com/rs/zerolog"
 	log "github.com/rs/zerolog/log"
 )
 
@@ -144,7 +145,16 @@ func (s *service) Read(ctx context.Context) (*benthos_service.Message, benthos_s
 	return msg, ackFunc, nil
 }
 func (s *service) Close(ctx context.Context) error {
-	return nil
+	log := zerolog.Ctx(ctx).With().Logger()
+	if s.sub != nil {
+		err := s.sub.Unsubscribe()
+		if err != nil {
+			log.Error().Err(err).Msg("failed to Unsubscribe")
+			return err
+		}
+		s.sub = nil
+	}
+	return s.centrifugeClient.Close(ctx)
 }
 func (s *service) OnConnectedHandler(e centrifuge.ConnectedEvent) {
 	log.Info().Msg("OnConnectedHandler")
