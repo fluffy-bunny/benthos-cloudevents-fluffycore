@@ -50,7 +50,7 @@ func main() {
 	startup.ConfigureServices(ctx, builder)
 	internal.Container = builder.Build()
 
-	_ = di.Get[*contracts_config.Config](internal.Container)
+	config := di.Get[*contracts_config.Config](internal.Container)
 	_ = di.Get[contracts_storage.ICentrifugeInputStorage](internal.Container)
 	_ = di.Get[contracts_centrifuge.ICentrifugeClient](internal.Container)
 
@@ -64,7 +64,13 @@ func main() {
 	// cancel context
 	ctx, cancel := context.WithCancel(ctx)
 
-	benthosStreams := di.Get[[]contracts_benthos.IBenthosStream](internal.Container)
+	benthosStreams := []contracts_benthos.IBenthosStream{}
+	for _, benthosStreamConfig := range config.CentrifugeConfig.Streams {
+		benthosStream := di.Get[contracts_benthos.IBenthosStream](internal.Container)
+		benthosStream.Configure(ctx, benthosStreamConfig)
+		benthosStreams = append(benthosStreams, benthosStream)
+	}
+
 	for _, benthosStream := range benthosStreams {
 		go func(benthosStream contracts_benthos.IBenthosStream) {
 			err := benthosStream.Run(ctx)

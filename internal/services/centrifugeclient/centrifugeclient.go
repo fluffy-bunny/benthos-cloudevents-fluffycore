@@ -7,16 +7,16 @@ import (
 
 	centrifuge "github.com/centrifugal/centrifuge-go"
 	contracts_centrifuge "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/centrifuge"
-	contracts_config "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/config"
 	di "github.com/fluffy-bunny/fluffy-dozm-di"
 	jwt "github.com/golang-jwt/jwt"
+	"github.com/rs/zerolog"
 )
 
 type (
 	service struct {
 		contracts_centrifuge.UnimplementedClientHandlers
 
-		config *contracts_config.Config
+		config *contracts_centrifuge.CentrifugeClientConfig
 		client *centrifuge.Client
 		mutex  sync.Mutex
 	}
@@ -29,15 +29,21 @@ func init() {
 
 }
 
-func (s *service) Ctor(config *contracts_config.Config) contracts_centrifuge.ICentrifugeClient {
-	svc := &service{
-		config: config,
-	}
+func (s *service) Ctor() contracts_centrifuge.ICentrifugeClient {
+	svc := &service{}
 	return svc
 }
 
-func AddSingletonCentrifugeClient(cb di.ContainerBuilder) {
-	di.AddSingleton[contracts_centrifuge.ICentrifugeClient](cb, stemService.Ctor)
+func AddTransientCentrifugeClient(cb di.ContainerBuilder) {
+	di.AddTransient[contracts_centrifuge.ICentrifugeClient](cb, stemService.Ctor)
+}
+func (s *service) Configure(ctx context.Context, config *contracts_centrifuge.CentrifugeClientConfig) {
+	log := zerolog.Ctx(ctx).With().Logger()
+	if s.config != nil {
+		log.Debug().Msg("CentrifugeClientConfig already configured")
+		return
+	}
+	s.config = config
 }
 
 func (s *service) GetClient() (*centrifuge.Client, error) {
@@ -48,7 +54,7 @@ func (s *service) GetClient() (*centrifuge.Client, error) {
 	if s.client == nil {
 
 		client := centrifuge.NewJsonClient(
-			s.config.CentrifugeConfig.Endpoint,
+			s.config.Endpoint,
 			centrifuge.Config{
 				// Sending token makes it work with Centrifugo JWT auth (with `secret` HMAC key).
 				Token: connToken("49", 0),

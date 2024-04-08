@@ -13,8 +13,8 @@ import (
 
 type (
 	service struct {
-		mutex          sync.Mutex
-		streamPosition *centrifuge.StreamPosition
+		mutex           sync.Mutex
+		streamPositions map[string]*centrifuge.StreamPosition
 	}
 )
 
@@ -25,7 +25,9 @@ func init() {
 }
 
 func (s *service) Ctor() contracts_storage.ICentrifugeInputStorage {
-	return &service{}
+	return &service{
+		streamPositions: make(map[string]*centrifuge.StreamPosition),
+	}
 }
 
 func AddSingletonCentrifugeInputStorage(cb di.ContainerBuilder) {
@@ -34,6 +36,9 @@ func AddSingletonCentrifugeInputStorage(cb di.ContainerBuilder) {
 func (s *service) validateStoreStreamPostitionRequest(request *contracts_storage.StoreStreamPostitionRequest) error {
 	if fluffycore_utils.IsNil(request) {
 		return status.Error(codes.InvalidArgument, "request is nil")
+	}
+	if fluffycore_utils.IsEmptyOrNil(request.Namespace) {
+		return status.Error(codes.InvalidArgument, "request.Namespace is empty")
 	}
 	if fluffycore_utils.IsNil(request.StreamPosition) {
 		return status.Error(codes.InvalidArgument, "request.StreamPosition is nil")
@@ -51,17 +56,31 @@ func (s *service) StoreStreamPostition(request *contracts_storage.StoreStreamPos
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	//--~--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--
-
-	s.streamPosition = request.StreamPosition
+	s.streamPositions[request.Namespace] = request.StreamPosition
 	return nil, nil
+}
+func (s *service) validateGetLatestStreamPostitionRequest(request *contracts_storage.GetLatestStreamPostitionRequest) error {
+	if fluffycore_utils.IsNil(request) {
+		return status.Error(codes.InvalidArgument, "request is nil")
+	}
+	if fluffycore_utils.IsEmptyOrNil(request.Namespace) {
+		return status.Error(codes.InvalidArgument, "request.Namespace is empty")
+	}
+	return nil
 }
 func (s *service) GetLatestStreamPostition(request *contracts_storage.GetLatestStreamPostitionRequest) (*contracts_storage.GetLatestStreamPostitionResponse, error) {
 	//--~--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	//--~--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--
+	if err := s.validateGetLatestStreamPostitionRequest(request); err != nil {
+		return nil, err
+	}
+	streamPosition := s.streamPositions[request.Namespace]
+
 	return &contracts_storage.GetLatestStreamPostitionResponse{
-		StreamPosition: s.streamPosition,
+		Namespace:      request.Namespace,
+		StreamPosition: streamPosition,
 	}, nil
 
 }

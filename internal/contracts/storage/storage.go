@@ -6,11 +6,16 @@ import (
 
 type (
 	StoreStreamPostitionRequest struct {
+		Namespace      string
 		StreamPosition *centrifuge.StreamPosition
 	}
-	StoreStreamPostitionResponse     struct{}
-	GetLatestStreamPostitionRequest  struct{}
+	StoreStreamPostitionResponse struct {
+	}
+	GetLatestStreamPostitionRequest struct {
+		Namespace string
+	}
 	GetLatestStreamPostitionResponse struct {
+		Namespace      string
 		StreamPosition *centrifuge.StreamPosition
 	}
 

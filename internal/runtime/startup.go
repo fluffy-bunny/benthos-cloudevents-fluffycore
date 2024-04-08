@@ -8,10 +8,10 @@ import (
 
 	contracts_config "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/config"
 	contracts_runtime "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/runtime"
+	services_benthosstream "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/benthosstream"
 	services_bloblang "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/bloblang"
 	services_centrifugeclient "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/centrifugeclient"
 	services_centrifugeinput "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/centrifugeinput"
-	services_centrifugestream "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/centrifugestream"
 	services_cloudeventoutput "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/cloudeventoutput"
 	services_justlogitoutput "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/justlogitoutput"
 	services_kafkaclient "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/kafkaclient"
@@ -70,8 +70,8 @@ func (s *Startup) ConfigureServices(ctx context.Context, builder di.ContainerBui
 	log.Info().Interface("final_config", config).Msg("config after merge")
 
 	di.AddInstance[*contracts_config.Config](builder, config)
-	services_centrifugeinput.AddSingletonCentrifugeInput(builder)
-	services_centrifugeclient.AddSingletonCentrifugeClient(builder)
+	services_centrifugeinput.AddTransientCentrifugeInput(builder)
+	services_centrifugeclient.AddTransientCentrifugeClient(builder)
 	services_cloudeventoutput.AddSingletonCloudEventOutput(builder)
 	services_justlogitoutput.AddSingletonJustLogItOutput(builder)
 	services_kafkaclient.AddSingletonKafkaDeadLetterClient(builder)
@@ -84,7 +84,8 @@ func (s *Startup) ConfigureServices(ctx context.Context, builder di.ContainerBui
 		}
 
 	}
-	services_centrifugestream.AddSingletonIBenthosStream(builder)
+	//services_centrifugestream.AddSingletonIBenthosStream(builder)
+	services_benthosstream.AddTransientBenthosStream(builder)
 	services_storage_inmemory_CentrifugeInputStorage.AddSingletonCentrifugeInputStorage(builder)
 }
 

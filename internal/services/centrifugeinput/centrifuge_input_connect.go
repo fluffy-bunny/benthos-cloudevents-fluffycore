@@ -24,7 +24,9 @@ func (s *service) Connect(ctx context.Context) error {
 	log := s.log
 	// this call is to make sure we can get to our storage.
 	_, err := s.centrifugeInputStorage.
-		GetLatestStreamPostition(&contracts_storage.GetLatestStreamPostitionRequest{})
+		GetLatestStreamPostition(&contracts_storage.GetLatestStreamPostitionRequest{
+			Namespace: s.channel,
+		})
 	if err != nil {
 		log.Error().Err(err).Msg("failed to GetLatestStreamPostition")
 		return err
@@ -115,6 +117,7 @@ func (s *service) Read(ctx context.Context) (*benthos_service.Message, benthos_s
 
 		_, err := s.centrifugeInputStorage.StoreStreamPostition(
 			&contracts_storage.StoreStreamPostitionRequest{
+				Namespace: s.channel,
 				StreamPosition: &centrifuge.StreamPosition{
 					Offset: ac.dispatchedPublicationEvent.Offset,
 					Epoch:  s.streamPosition.Epoch,
@@ -169,7 +172,9 @@ func (s *service) goCatchupHistory() {
 		defer s.mutexPublish.Unlock()
 
 		getLatestStreamPostitionRequest, err := s.centrifugeInputStorage.
-			GetLatestStreamPostition(&contracts_storage.GetLatestStreamPostitionRequest{})
+			GetLatestStreamPostition(&contracts_storage.GetLatestStreamPostitionRequest{
+				Namespace: s.channel,
+			})
 		if err != nil {
 			log.Error().Err(err).Msg("failed to GetLatestStreamPostition")
 			return
@@ -177,9 +182,11 @@ func (s *service) goCatchupHistory() {
 		currentStreamPosition := getLatestStreamPostitionRequest.StreamPosition
 		if currentStreamPosition == nil {
 			// nothing to but to write the one we got from the subscription
-			_, err := s.centrifugeInputStorage.StoreStreamPostition(&contracts_storage.StoreStreamPostitionRequest{
-				StreamPosition: s.streamPosition,
-			})
+			_, err := s.centrifugeInputStorage.StoreStreamPostition(
+				&contracts_storage.StoreStreamPostitionRequest{
+					Namespace:      s.channel,
+					StreamPosition: s.streamPosition,
+				})
 			if err != nil {
 				log.Error().Err(err).Msg("failed to StoreStreamPostition")
 			}

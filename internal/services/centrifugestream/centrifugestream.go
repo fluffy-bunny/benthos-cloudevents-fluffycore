@@ -11,6 +11,7 @@ import (
 
 type (
 	service struct {
+		contracts_benthos.UnimplementedIBenthosStream
 		config *contracts_config.Config
 		stream *benthos_service.Stream
 	}

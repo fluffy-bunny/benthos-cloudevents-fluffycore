@@ -1,6 +1,7 @@
 package config
 
 import (
+	contracts_benthos "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/benthos"
 	fluffycore_contracts_ddprofiler "github.com/fluffy-bunny/fluffycore/contracts/ddprofiler"
 )
 
@@ -18,8 +19,9 @@ type (
 	}
 
 	CentrifugeConfig struct {
-		Endpoint string `json:"endpoint"`
+		Streams []*contracts_benthos.CentrifugeStreamConfig `json:"streams"`
 	}
+
 	Config struct {
 		DDProfilerConfig      *fluffycore_contracts_ddprofiler.Config `json:"ddProfilerConfig"`
 		KafkaDeadLetterConfig *KafkaConfig                            `json:"kafkaDeadLetterConfig"`
@@ -48,7 +50,13 @@ var ConfigDefaultJSON = []byte(`
 		"rootPath": ""
 	},
 	"centrifugeConfig": {
-		"endpoint": "ws://localhost:8000/connection/websocket"
+		"streams": [
+			{
+				"namespace": "unique-namespace-one",
+				"endpoint": "ws://localhost:8079/connection/websocket",
+				"configPath": "./config/centrifuge.yaml"
+			}
+		]
 	}
 
   }

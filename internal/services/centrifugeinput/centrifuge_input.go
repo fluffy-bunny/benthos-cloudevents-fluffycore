@@ -12,7 +12,7 @@ import (
 	di "github.com/fluffy-bunny/fluffy-dozm-di"
 	zerolog "github.com/rs/zerolog"
 	log "github.com/rs/zerolog/log"
-	"golang.org/x/sync/semaphore"
+	semaphore "golang.org/x/sync/semaphore"
 )
 
 type (
@@ -21,6 +21,7 @@ type (
 
 		// channel: is a hint to the processor.  This allows a processor to have a single app that takes all the requests.
 		channel                string
+		endpoint               string
 		logger                 *benthos_service.Logger
 		centrifugeInputStorage contracts_storage.ICentrifugeInputStorage
 		centrifugeClient       contracts_centrifuge.ICentrifugeClient
@@ -60,8 +61,8 @@ func (s *service) Ctor(
 func init() {
 	var _ contracts_benthos.IBenthosRegistration = (*service)(nil)
 }
-func AddSingletonCentrifugeInput(cb di.ContainerBuilder) {
-	di.AddSingleton[contracts_benthos.IBenthosRegistration](cb, stemService.Ctor)
+func AddTransientCentrifugeInput(cb di.ContainerBuilder) {
+	di.AddTransient[contracts_benthos.IBenthosRegistration](cb, stemService.Ctor)
 }
 
 func (s *service) acquireSemaphore(ctx context.Context) error {

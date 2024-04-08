@@ -1,15 +1,20 @@
 package centrifuge
 
 import (
+	"context"
+
 	centrifuge "github.com/centrifugal/centrifuge-go"
 	fluffycore_contracts_common "github.com/fluffy-bunny/fluffycore/contracts/common"
 )
 
 type (
+	CentrifugeClientConfig struct {
+		Endpoint string `json:"endpoint"`
+	}
 	ICentrifugeClient interface {
 		fluffycore_contracts_common.ICloser
 		fluffycore_contracts_common.IDispose
-
+		Configure(ctx context.Context, config *CentrifugeClientConfig)
 		GetClient() (*centrifuge.Client, error)
 	}
 
