@@ -16,28 +16,34 @@ import (
 )
 
 type (
+	PublicationEvent struct {
+		publicationEvent *centrifuge.PublicationEvent
+		streamPosition   *centrifuge.StreamPosition
+	}
 	service struct {
 		contracts_centrifuge.UnimplementedSubscriptionHandlers
 
 		// channel: is a hint to the processor.  This allows a processor to have a single app that takes all the requests.
-		channel                string
-		endpoint               string
-		logger                 *benthos_service.Logger
-		centrifugeInputStorage contracts_storage.ICentrifugeInputStorage
-		centrifugeClient       contracts_centrifuge.ICentrifugeClient
-		streamPosition         *centrifuge.StreamPosition
-		log                    zerolog.Logger
+		channel                  string
+		endpoint                 string
+		logger                   *benthos_service.Logger
+		centrifugeInputStorage   contracts_storage.ICentrifugeInputStorage
+		centrifugeClient         contracts_centrifuge.ICentrifugeClient
+		subscribedStreamPosition *centrifuge.StreamPosition
+		log                      zerolog.Logger
 		// this semaphore is to block the publish until our downstream has consumed and acked the message
 		sem *semaphore.Weighted
-		// this mutexPublish is to block the publish until we have caught up with history
-		mutexPublish sync.Mutex
 
-		// this  mutexRead is to guard against multiple reads
-		mutexRead sync.Mutex
+		// this  mutexBentosRead is to guard against multiple reads
+		mutexBentosRead sync.Mutex
 
-		currentPublicationEvent *centrifuge.PublicationEvent
+		currentPublicationEvent *PublicationEvent
 
 		sub *centrifuge.Subscription
+		// this is wait group that will block publishing to happen until we have caught up with out history
+		wgPublsh            sync.WaitGroup
+		mutexHistoryCatchup sync.Mutex
+		stopHistoryCatchup  bool
 	}
 )
 

@@ -71,7 +71,7 @@ func (s *service) Connect(ctx context.Context) error {
 	}
 	// take a READ lock where our publish will unlock it upon getting a new message
 	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--
-	s.mutexRead.Lock()
+	s.mutexBentosRead.Lock()
 	// we block the read until the dispatched message has been acknowledged
 	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--
 
@@ -94,7 +94,7 @@ func (s *service) Connect(ctx context.Context) error {
 func (s *service) Read(ctx context.Context) (*benthos_service.Message, benthos_service.AckFunc, error) {
 
 	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--
-	s.mutexRead.Lock()
+	s.mutexBentosRead.Lock()
 	// we block the read until the dispatched message has been acknowledged
 	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--
 
@@ -102,11 +102,11 @@ func (s *service) Read(ctx context.Context) (*benthos_service.Message, benthos_s
 	type ackTracker struct {
 		Done                       bool
 		mutex                      sync.Mutex
-		dispatchedPublicationEvent *centrifuge.PublicationEvent
+		dispatchedPublicationEvent *PublicationEvent
 	}
 	ac := &ackTracker{}
 	ackFunc := func(ctx context.Context, ackErr error) error {
-		// looks like benthos can call this more than once.
+		// Benthos can call this more than once.
 		//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--
 		ac.mutex.Lock()
 		defer ac.mutex.Unlock()
@@ -117,11 +117,8 @@ func (s *service) Read(ctx context.Context) (*benthos_service.Message, benthos_s
 
 		_, err := s.centrifugeInputStorage.StoreStreamPostition(
 			&contracts_storage.StoreStreamPostitionRequest{
-				Namespace: s.channel,
-				StreamPosition: &centrifuge.StreamPosition{
-					Offset: ac.dispatchedPublicationEvent.Offset,
-					Epoch:  s.streamPosition.Epoch,
-				},
+				Namespace:      s.channel,
+				StreamPosition: ac.dispatchedPublicationEvent.streamPosition,
 			})
 		if err != nil {
 			log.Error().Err(err).Msg("failed to StoreStreamPostition")
@@ -131,6 +128,7 @@ func (s *service) Read(ctx context.Context) (*benthos_service.Message, benthos_s
 			log.Error().Err(ackErr).Msg("failed to ack")
 			return ackErr
 		}
+		log.Debug().Msg("ack")
 		// ok the message has been acked so we release the semaphore
 		// this will let a publish happen again and we then can release the read lock
 		s.releaseSemaphore()
@@ -138,7 +136,7 @@ func (s *service) Read(ctx context.Context) (*benthos_service.Message, benthos_s
 		return nil
 	}
 
-	content := []byte(s.currentPublicationEvent.Data)
+	content := []byte(s.currentPublicationEvent.publicationEvent.Data)
 
 	msg := benthos_service.NewMessage(content)
 	ac.dispatchedPublicationEvent = s.currentPublicationEvent
@@ -160,18 +158,32 @@ func (s *service) OnSubscribedHandler(e centrifuge.SubscribedEvent) {
 	log.Info().Msg("OnSubscribedHandler")
 	// here we establish where centrifuge is in the stream
 	// pull the stream position and store it.
-	s.streamPosition = e.StreamPosition
+	s.subscribedStreamPosition = e.StreamPosition
 	// fire up a go routine to catch up with history
 	s.goCatchupHistory()
 }
 func (s *service) goCatchupHistory() {
 	// that a lock no matter what, we will release it when we have caught up with history.
-	s.mutexPublish.Lock()
+	s.wgPublsh.Add(1)
+	// tell our current go routine, if running, to stop
+	s.stopHistoryCatchup = true
+	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~
+	// we only allow one go routine to catch up with history at a time
+	s.mutexHistoryCatchup.Lock()
+	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~
+
+	// reset our stop flag
+	s.stopHistoryCatchup = false
 	go func() {
 		// once caught up we release the mutex
-		defer s.mutexPublish.Unlock()
-
-		getLatestStreamPostitionRequest, err := s.centrifugeInputStorage.
+		defer func() {
+			// release our wait group reference
+			s.wgPublsh.Done()
+			// unlock the history catch up mutex
+			s.mutexHistoryCatchup.Unlock()
+		}()
+		log := log.With().Caller().Interface("subscribedStreamPosition", s.subscribedStreamPosition).Logger()
+		getLatestStreamPostitionResponse, err := s.centrifugeInputStorage.
 			GetLatestStreamPostition(&contracts_storage.GetLatestStreamPostitionRequest{
 				Namespace: s.channel,
 			})
@@ -179,24 +191,49 @@ func (s *service) goCatchupHistory() {
 			log.Error().Err(err).Msg("failed to GetLatestStreamPostition")
 			return
 		}
-		currentStreamPosition := getLatestStreamPostitionRequest.StreamPosition
+		currentStreamPosition := getLatestStreamPostitionResponse.StreamPosition
+
+		log.Debug().Interface("currentStreamPosition", currentStreamPosition).Msg("currentStreamPosition - initial")
 		if currentStreamPosition == nil {
 			// nothing to but to write the one we got from the subscription
 			_, err := s.centrifugeInputStorage.StoreStreamPostition(
 				&contracts_storage.StoreStreamPostitionRequest{
 					Namespace:      s.channel,
-					StreamPosition: s.streamPosition,
+					StreamPosition: s.subscribedStreamPosition,
 				})
 			if err != nil {
 				log.Error().Err(err).Msg("failed to StoreStreamPostition")
 			}
 			return
 		}
+		if currentStreamPosition.Offset == s.subscribedStreamPosition.Offset {
+			// we are caught up
+			return
+		}
+		currentStreamPosition.Epoch = s.subscribedStreamPosition.Epoch
 		// stream position will get updated downstream after we get an ACK
-		s.streamPosition = currentStreamPosition
 		for {
+			if s.stopHistoryCatchup {
+				break
+			}
+			getLatestStreamPostitionResponse, err := s.centrifugeInputStorage.
+				GetLatestStreamPostition(&contracts_storage.GetLatestStreamPostitionRequest{
+					Namespace: s.channel,
+				})
+			if err != nil {
+				log.Error().Err(err).Msg("failed to GetLatestStreamPostition")
+				return
+			}
+			currentStreamPosition := getLatestStreamPostitionResponse.StreamPosition
+			log.Debug().Interface("currentStreamPosition", currentStreamPosition).Msg("currentStreamPosition - loop")
+
+			if currentStreamPosition.Offset == s.subscribedStreamPosition.Offset {
+				log.Info().Msg("we are caught up")
+				// we are caught up
+				return
+			}
 			historyResult, err := s.sub.History(context.Background(),
-				centrifuge.WithHistorySince(s.streamPosition),
+				centrifuge.WithHistorySince(currentStreamPosition),
 				centrifuge.WithHistoryLimit(100),
 			)
 			if err != nil {
@@ -207,6 +244,9 @@ func (s *service) goCatchupHistory() {
 				break
 			}
 			for _, publication := range historyResult.Publications {
+				if s.stopHistoryCatchup {
+					break
+				}
 				s.internalOnPublicationHandler(&centrifuge.PublicationEvent{
 					Publication: publication,
 				})
@@ -217,21 +257,29 @@ func (s *service) goCatchupHistory() {
 }
 func (s *service) internalOnPublicationHandler(e *centrifuge.PublicationEvent) {
 	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~
+	// only one message at at time is allowed to come in from centrifuge
 	err := s.acquireSemaphore(context.Background())
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to acquireSemaphore")
 	}
 	// don't release the semaphore here, it has to be released when the benthos consumer ACKS the message
 	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~
-	s.currentPublicationEvent = e
-	s.mutexRead.Unlock()
+	s.currentPublicationEvent = &PublicationEvent{
+		publicationEvent: e,
+		streamPosition: &centrifuge.StreamPosition{
+			Epoch:  s.subscribedStreamPosition.Epoch,
+			Offset: e.Offset,
+		},
+	}
+	// we now can let the bentos read happen
+	s.mutexBentosRead.Unlock()
 }
 
 func (s *service) OnPublicationHandler(e centrifuge.PublicationEvent) {
-	log.Info().Msg("OnPublicationHandler")
+	log.Debug().Msg("OnPublicationHandler")
 	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~
-	s.mutexPublish.Lock()
-	defer s.mutexPublish.Unlock()
+	// we are blocking publication to use from centrifuge until we have caught up with history
+	s.wgPublsh.Wait()
 	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~
 	s.internalOnPublicationHandler(&e)
 }
