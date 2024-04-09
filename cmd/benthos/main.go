@@ -26,6 +26,9 @@ import (
 	_ "github.com/benthosdev/benthos/v4/public/components/kafka"
 	internal "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal"
 	contracts_benthos "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/benthos"
+	contracts_centrifuge "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/centrifuge"
+	contracts_config "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/config"
+	contracts_storage "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/storage"
 	_ "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/input"
 	_ "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/output"
 	internal_runtime "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/runtime"
@@ -46,6 +49,11 @@ func main() {
 	builder := di.Builder()
 	startup.ConfigureServices(ctx, builder)
 	internal.Container = builder.Build()
+
+	config := di.Get[*contracts_config.Config](internal.Container)
+	_ = di.Get[contracts_storage.ICentrifugeInputStorage](internal.Container)
+	_ = di.Get[contracts_centrifuge.ICentrifugeClient](internal.Container)
+
 	registrations := di.Get[[]contracts_benthos.IBenthosRegistration](internal.Container)
 	for _, registration := range registrations {
 		registration.Register()
@@ -56,7 +64,13 @@ func main() {
 	// cancel context
 	ctx, cancel := context.WithCancel(ctx)
 
-	benthosStreams := di.Get[[]contracts_benthos.IBenthosStream](internal.Container)
+	benthosStreams := []contracts_benthos.IBenthosStream{}
+	for _, benthosStreamConfig := range config.CentrifugeConfig.Streams {
+		benthosStream := di.Get[contracts_benthos.IBenthosStream](internal.Container)
+		benthosStream.Configure(ctx, benthosStreamConfig)
+		benthosStreams = append(benthosStreams, benthosStream)
+	}
+
 	for _, benthosStream := range benthosStreams {
 		go func(benthosStream contracts_benthos.IBenthosStream) {
 			err := benthosStream.Run(ctx)
