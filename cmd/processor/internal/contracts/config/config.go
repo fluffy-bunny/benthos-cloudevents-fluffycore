@@ -15,6 +15,13 @@ type (
 		Group string   `json:"group" mapstructure:"GROUP"`
 		Topic string   `json:"topic" mapstructure:"TOPIC"`
 	}
+	ConfigFiles struct {
+		MastodonPath string `json:"mastodonPath"`
+	}
+
+	InitialConfig struct {
+		ConfigFiles ConfigFiles `json:"configFiles"`
+	}
 	Config struct {
 		fluffycore_contracts_config.CoreConfig `mapstructure:",squash"`
 

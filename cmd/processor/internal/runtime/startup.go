@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"encoding/json"
 
 	internal_auth "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/auth"
 	contracts_config "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/contracts/config"
@@ -9,7 +10,6 @@ import (
 	services_kafkaclient "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/services/kafkaclient"
 	services_kafkacloudeventservice "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/services/kafkacloudeventservice"
 	services_processor "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/services/processor"
-
 	internal_version "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/version"
 	di "github.com/fluffy-bunny/fluffy-dozm-di"
 	fluffycore_contracts_ddprofiler "github.com/fluffy-bunny/fluffycore/contracts/ddprofiler"
@@ -21,11 +21,13 @@ import (
 	fluffycore_middleware_correlation "github.com/fluffy-bunny/fluffycore/middleware/correlation"
 	fluffycore_middleware_dicontext "github.com/fluffy-bunny/fluffycore/middleware/dicontext"
 	fluffycore_middleware_logging "github.com/fluffy-bunny/fluffycore/middleware/logging"
+	core_runtime "github.com/fluffy-bunny/fluffycore/runtime"
 	fluffycore_services_ddprofiler "github.com/fluffy-bunny/fluffycore/services/ddprofiler"
 	fluffycore_utils_redact "github.com/fluffy-bunny/fluffycore/utils/redact"
 	status "github.com/gogo/status"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	zerolog "github.com/rs/zerolog"
+	log "github.com/rs/zerolog/log"
 	codes "google.golang.org/grpc/codes"
 )
 
@@ -118,12 +120,28 @@ func (s *startup) Configure(ctx context.Context, rootContainer di.Container, una
 	unaryServerInterceptorBuilder.Use(grpc_recovery.UnaryServerInterceptor(opts...))
 }
 func (s *startup) GetConfigOptions() *fluffycore_contracts_runtime.ConfigOptions {
+	log := log.With().Caller().Str("method", "GetConfigOptions").Logger()
+	// here we load a config file and merge it over the default.
+	initialConfigOptions := &fluffycore_contracts_runtime.ConfigOptions{
+		Destination: &contracts_config.InitialConfig{},
+		RootConfig:  contracts_config.ConfigDefaultJSON,
+	}
+	err := core_runtime.LoadConfig(initialConfigOptions)
+	if err != nil {
+		panic(err)
+	}
+
+	defaultConfig := &contracts_config.Config{}
+	err = json.Unmarshal([]byte(contracts_config.ConfigDefaultJSON), defaultConfig)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to unmarshal ConfigDefaultJSON")
+	}
+	log.Info().Interface("defaultConfig", defaultConfig).Msg("config after merge")
 	s.config = &contracts_config.Config{}
 	s.configOptions = &fluffycore_contracts_runtime.ConfigOptions{
 		Destination: s.config,
 		RootConfig:  contracts_config.ConfigDefaultJSON,
 	}
-	return s.configOptions
 }
 
 func (s *startup) SetRootContainer(container di.Container) {

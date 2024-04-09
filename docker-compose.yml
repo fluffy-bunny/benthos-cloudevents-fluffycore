@@ -88,6 +88,18 @@ services:
       kafka-topics.sh --create --topic ${KAFKA_CLOUDEVENTS_CORE_TOPIC} --bootstrap-server kafka:9092 --partitions 4 --replication-factor 1; 
       kafka-topics.sh --create --topic ${KAFKA_CLOUDEVENTS_CORE_DEADLETTER_TOPIC} --bootstrap-server kafka:9092 --partitions 4 --replication-factor 1; 
       "
+  centrifugo:
+    container_name: centrifugo
+    image: centrifugo/centrifugo:v5
+    volumes:
+      - ./config/centrifugo/config.json:/centrifugo/config.json
+    command: centrifugo -c config.json
+    ports:
+      - 8079:8000
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
 
   processor:
     extends:

@@ -13,10 +13,15 @@ type (
 	IBenthosRegistration interface {
 		Register() error
 	}
+	CentrifugeStreamConfig struct {
+		ConfigPath string `json:"configPath"`
+	}
 	IBenthosStream interface {
+		Configure(ctx context.Context, config *CentrifugeStreamConfig) (err error)
 		Run(ctx context.Context) (err error)
 		Stop(ctx context.Context) (err error)
 	}
+	UnimplementedIBenthosStream       struct{}
 	UnimplementedIBenthosRegistration struct {
 	}
 	UnimplementedBenthosOutput struct {
@@ -38,5 +43,9 @@ func (UnimplementedBenthosOutput) Write(context.Context, *benthos_service.Messag
 }
 
 func (UnimplementedBenthosOutput) Close(ctx context.Context) error {
+	return nil
+}
+
+func (UnimplementedIBenthosStream) Configure(ctx context.Context, config *CentrifugeStreamConfig) (err error) {
 	return nil
 }

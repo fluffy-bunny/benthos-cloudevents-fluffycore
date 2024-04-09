@@ -1,0 +1,21 @@
+http:
+  enabled: false
+input:
+  centrifuge_input:
+    endpoint: ws://localhost:8079/connection/websocket
+    channel: chat:index
+
+pipeline:
+  threads: 1
+  processors:
+    - sleep:
+        duration: 1s
+output:
+  justlogit:
+    max_in_flight: 64
+logger:
+  level: ${LOG_LEVEL}
+  format: json
+  add_timestamp: true
+  static_fields:
+    "@service": centrifuge_input

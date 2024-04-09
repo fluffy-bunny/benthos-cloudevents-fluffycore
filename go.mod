@@ -6,17 +6,22 @@ go 1.22
 
 require (
 	github.com/benthosdev/benthos/v4 v4.26.0
+	github.com/centrifugal/centrifuge-go v0.10.2
 	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/fluffy-bunny/fluffy-dozm-di v0.0.2
-	github.com/fluffy-bunny/fluffycore v1.0.89
+	github.com/fluffy-bunny/fluffycore v1.0.90-herb-ReplaceMergeMap.1
 	github.com/gogo/status v1.1.1
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1
 	github.com/rs/zerolog v1.32.0
+	github.com/spf13/cobra v1.8.0
+	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.9.0
 	github.com/twmb/franz-go v1.16.1
 	golang.org/x/oauth2 v0.18.0
+	golang.org/x/sync v0.6.0
 	google.golang.org/grpc v1.62.1
 	google.golang.org/protobuf v1.33.0
 )
@@ -36,9 +41,11 @@ require (
 	github.com/Jeffail/grok v1.1.0 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
+	github.com/alexedwards/argon2id v1.0.0 // indirect
 	github.com/auth0/go-jwt-middleware/v2 v2.2.1 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
+	github.com/centrifugal/protocol v0.10.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cockroachdb/apd/v3 v3.2.1 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.3 // indirect
@@ -62,7 +69,6 @@ require (
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang-migrate/migrate/v4 v4.17.0 // indirect
 	github.com/golang/mock v1.6.0 // indirect
@@ -92,6 +98,8 @@ require (
 	github.com/jellydator/ttlcache/v2 v2.11.1 // indirect
 	github.com/jinzhu/copier v0.4.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/josharian/intern v1.0.0 // indirect
+	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.6 // indirect
 	github.com/klauspost/pgzip v1.2.6 // indirect
@@ -106,6 +114,7 @@ require (
 	github.com/linkedin/goavro/v2 v2.12.0 // indirect
 	github.com/madflojo/tasks v1.1.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
+	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/matoous/go-nanoid/v2 v2.0.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -114,6 +123,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mpvl/unique v0.0.0-20150818121801-cbe035fff7de // indirect
+	github.com/nicksnyder/go-i18n/v2 v2.4.0 // indirect
 	github.com/nsf/jsondiff v0.0.0-20210926074059-1e845ec5d249 // indirect
 	github.com/outcaste-io/ristretto v0.2.3 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
@@ -135,15 +145,14 @@ require (
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.7.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
+	github.com/segmentio/encoding v0.3.6 // indirect
 	github.com/segmentio/ksuid v1.0.4 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
-	github.com/spf13/cobra v1.8.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.18.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/tilinna/z85 v1.0.0 // indirect
 	github.com/tinylib/msgp v1.1.8 // indirect
@@ -172,7 +181,6 @@ require (
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.22.0 // indirect
-	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
