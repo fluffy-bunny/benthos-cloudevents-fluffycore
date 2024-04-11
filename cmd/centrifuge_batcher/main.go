@@ -62,8 +62,8 @@ func main() {
 
 	count := 0
 	for {
-		if count > 10000 {
-			cancelCtx()
+		if count > 3 {
+			//			cancelCtx()
 			break
 		}
 		time.Sleep(5 * time.Second)
@@ -76,15 +76,12 @@ func main() {
 
 		count++
 	}
-	count = 0
-	for {
-		if count > 10 {
-			break
-		}
-		time.Sleep(30 * time.Second)
-	}
 	err = centrifugeStreamBatcher.Stop(ctx)
 	if err != nil {
 		log.Error().Err(err).Msg("centrifugeStreamBatcher.Stop")
 	}
+	cancelCtx()
+	ticker := time.NewTicker(10 * time.Second)
+	<-ticker.C
+	log.Info().Msg("done")
 }

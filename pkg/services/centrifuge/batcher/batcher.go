@@ -130,7 +130,11 @@ func (s *service) Stop(ctx context.Context) error {
 	//--~--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--
 	s.mutexEngine.Lock()
 	defer s.mutexEngine.Unlock()
+	// stop any publishing from comming in.
+	s.wgPublsh.Add(1)
+	defer s.wgPublsh.Done()
 	//--~--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--
+
 	if !s.running {
 		return nil
 	}
