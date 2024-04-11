@@ -241,10 +241,12 @@ func (s *service) goCatchupHistory(e centrifuge.SubscribedEvent) {
 		return
 	}
 	if s.config.HistoricalStreamPosition.Epoch != e.StreamPosition.Epoch {
-		// TODO: need to find out from centrifuge how to handle this
-		s.log.Error().Msg("mismatched epoch")
-		return
+		// this will fail with the following error
+		// {"error":"112: unrecoverable position"}
+		s.config.HistoricalStreamPosition.Epoch = e.StreamPosition.Epoch
+		s.config.HistoricalStreamPosition.Offset = 0
 	}
+
 	// that a lock no matter what, we will release it when we have caught up with history.
 	s.wgPublsh.Add(1)
 	if s.cancelCtxCatchup != nil {

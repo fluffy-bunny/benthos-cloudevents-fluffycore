@@ -40,10 +40,13 @@ func main() {
 
 	centrifugeStreamBatcher := di.Get[pkg_contracts_centrifuge.ICentrifugeStreamBatcher](container)
 	centrifugeStreamBatcher.Configure(ctx, &pkg_contracts_centrifuge.CentrifugeConfig{
-		Channel:                  "chat:index",
-		BatchSize:                3,
-		NumberOfBatches:          2,
-		HistoricalStreamPosition: nil,
+		Channel:         "chat:index",
+		BatchSize:       3,
+		NumberOfBatches: 2,
+		HistoricalStreamPosition: &centrifuge.StreamPosition{
+			Epoch:  "dddd",
+			Offset: 0,
+		},
 		CentrifugeClientConfig: &pkg_contracts_centrifuge.CentrifugeClientConfig{
 			Endpoint: "ws://localhost:8079/connection/websocket",
 			GetToken: func(e centrifuge.ConnectionTokenEvent) (string, error) {
@@ -59,11 +62,11 @@ func main() {
 
 	count := 0
 	for {
-		if count > 10 {
+		if count > 10000 {
 			cancelCtx()
 			break
 		}
-		time.Sleep(30 * time.Second)
+		time.Sleep(5 * time.Second)
 
 		batch, err := centrifugeStreamBatcher.GetBatch(ctx, true)
 		if err != nil {
