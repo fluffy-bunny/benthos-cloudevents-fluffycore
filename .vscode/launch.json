@@ -5,6 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "centrifuge_batcher",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/centrifuge_batcher",
+            "env": {
+ 
+                "LOG_LEVEL": "info",     
+            }
+             
+        }, 
+        {
             "name": "streams-builder",
             "type": "go",
             "request": "launch",

@@ -4,15 +4,14 @@ import (
 	"context"
 	"sync"
 
+	queue "github.com/adrianbrad/queue"
 	centrifuge "github.com/centrifugal/centrifuge-go"
 	contracts_centrifuge "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/contracts/centrifuge"
 	di "github.com/fluffy-bunny/fluffy-dozm-di"
 	status "github.com/gogo/status"
 	async "github.com/reugn/async"
 	zerolog "github.com/rs/zerolog"
-	log "github.com/rs/zerolog/log"
-
-	queue "github.com/adrianbrad/queue"
+	blockingQueues "github.com/theodesp/blockingQueues"
 	codes "google.golang.org/grpc/codes"
 )
 
@@ -25,37 +24,51 @@ type (
 	batchManagement struct {
 		publicationBatcher *publicationBatcher
 		mutexBatch         sync.Mutex
-		Batchs             queue.Queue[*contracts_centrifuge.Batch]
+
+		Batchs *blockingQueues.BlockingQueue
 	}
 	service struct {
 		contracts_centrifuge.UnimplementedSubscriptionHandlers
 
-		config              *contracts_centrifuge.CentrifugeConfig
-		mutexEngine         sync.Mutex
-		running             bool
-		cancelCtx           context.CancelFunc
-		ctxEngine           context.Context
-		ctxCatchup          context.Context
-		cancelCtxCatchup    context.CancelFunc
-		future              async.Future[string]
-		ctn                 di.Container
-		client              contracts_centrifuge.ICentrifugeClient
-		sub                 *centrifuge.Subscription
-		err                 error
-		log                 zerolog.Logger
-		wgPublsh            sync.WaitGroup
+		config *contracts_centrifuge.CentrifugeConfig
+		// mutexEngine guards the configure, stop, and start methods
+		mutexEngine      sync.Mutex
+		running          bool
+		cancelCtx        context.CancelFunc
+		ctxEngine        context.Context
+		ctxCatchup       context.Context
+		cancelCtxCatchup context.CancelFunc
+		future           async.Future[string]
+		// container to our di so we can dynamically get services
+		ctn di.Container
+		// client to connect to centrifuge
+		client contracts_centrifuge.ICentrifugeClient
+		// sub is the subscription to the channel
+		sub *centrifuge.Subscription
+		err error
+		// log is the logger
+		log zerolog.Logger
+		// wgPublsh is a wait group to ensure we have caught up with history before we start processing current publications
+		wgPublsh sync.WaitGroup
+		// mutexHistoryCatchup is a mutex to ensure only one go routine is catching up with history at a time
 		mutexHistoryCatchup sync.Mutex
 
 		errHistoricalCatchUp error
 
+		// BatchManagement is a struct that accepts publications and batches them up
 		BatchManagement *batchManagement
 	}
 )
 
-func NewBatchManagement(NumberOfBatches int32, batchSize int32) *batchManagement {
+func NewBatchManagement(NumberOfBatches int, batchSize int32) *batchManagement {
+	batch, err := blockingQueues.NewArrayBlockingQueue(uint64(NumberOfBatches))
+	if err != nil {
+		panic(err)
+	}
+
 	return &batchManagement{
 		publicationBatcher: NewPublicationBatcher(batchSize),
-		Batchs:             queue.NewBlocking[*contracts_centrifuge.Batch](nil, queue.WithCapacity(int(NumberOfBatches))),
+		Batchs:             batch,
 	}
 }
 
@@ -75,6 +88,11 @@ func AddTransientCentrifugeStreamBatcher(cb di.ContainerBuilder) {
 	di.AddTransient[contracts_centrifuge.ICentrifugeStreamBatcher](cb, stemService.Ctor)
 }
 func (s *service) Configure(ctx context.Context, config *contracts_centrifuge.CentrifugeConfig) error {
+	//--~--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--
+	s.mutexEngine.Lock()
+	defer s.mutexEngine.Unlock()
+	//--~--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--
+
 	log := zerolog.Ctx(ctx).With().Logger()
 	if s.running {
 		err := status.Error(codes.AlreadyExists, "config cannot be changed while running")
@@ -85,8 +103,9 @@ func (s *service) Configure(ctx context.Context, config *contracts_centrifuge.Ce
 	s.BatchManagement = NewBatchManagement(config.NumberOfBatches, config.BatchSize)
 	return nil
 }
-func (s *service) GetBatch(ctx context.Context) (*contracts_centrifuge.Batch, error) {
-	return nil, nil
+func (s *service) GetBatch(ctx context.Context, flush bool) (*contracts_centrifuge.Batch, error) {
+	batch := s.BatchManagement.PullBatch(flush)
+	return batch, nil
 }
 func (s *service) Start(ctx context.Context) error {
 	//--~--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--
@@ -189,13 +208,42 @@ func (s *service) OnSubscribedHandler(e centrifuge.SubscribedEvent) {
 	// fire up a go routine to catch up with history
 	s.goCatchupHistory(e)
 }
+func (s *service) OnPublicationHandler(e centrifuge.PublicationEvent) {
+	s.log.Debug().Msg("OnPublicationHandler")
+	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~
+	// we are blocking publication to use from centrifuge until we have caught up with history
+	s.wgPublsh.Wait()
+	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~
+	s.internalOnPublicationHandler(&e)
+}
+func (s *service) internalOnPublicationHandler(e *centrifuge.PublicationEvent) {
+	s.BatchManagement.Add(e.Publication)
+	s.config.HistoricalStreamPosition.Offset = e.Publication.Offset
+}
+
 func (s *service) goCatchupHistory(e centrifuge.SubscribedEvent) {
-	if s.config.CatchupStreamPosition == nil {
+	log := s.log.With().Interface("subscribed_stream_position", e.StreamPosition).Logger()
+	log.Info().Msg("goCatchupHistory")
+	if s.config.HistoricalStreamPosition == nil {
+		// our first time through
+		s.config.HistoricalStreamPosition = e.StreamPosition
+		log.Info().Msg("no historical data requested")
 		return
 	}
-	if s.config.CatchupStreamPosition.Offset == e.StreamPosition.Offset {
+	log = log.With().Interface("historical_stream_position", s.config.HistoricalStreamPosition).Logger()
+	if s.config.HistoricalStreamPosition.Offset == e.StreamPosition.Offset {
+		s.log.Info().Msg("already caught up")
 		return
-
+	}
+	if len(s.config.HistoricalStreamPosition.Epoch) == 0 {
+		// bad config
+		s.log.Error().Msg("bad config - HistoricalStreamPosition.Epoch is empty")
+		return
+	}
+	if s.config.HistoricalStreamPosition.Epoch != e.StreamPosition.Epoch {
+		// TODO: need to find out from centrifuge how to handle this
+		s.log.Error().Msg("mismatched epoch")
+		return
 	}
 	// that a lock no matter what, we will release it when we have caught up with history.
 	s.wgPublsh.Add(1)
@@ -209,13 +257,10 @@ func (s *service) goCatchupHistory(e centrifuge.SubscribedEvent) {
 	s.ctxCatchup, s.cancelCtxCatchup = context.WithCancel(context.Background())
 	subscribedStreamPosition := e.StreamPosition
 	type StreamPositionTracker struct {
-		CurrentHistoricalStreamPosition *centrifuge.StreamPosition
-		CaughtUpStreamPosition          *centrifuge.StreamPosition
+		SubscribedStreamPosition *centrifuge.StreamPosition
 	}
-	s.config.CatchupStreamPosition.Epoch = subscribedStreamPosition.Epoch
 	tracker := &StreamPositionTracker{
-		CurrentHistoricalStreamPosition: s.config.CatchupStreamPosition,
-		CaughtUpStreamPosition:          subscribedStreamPosition,
+		SubscribedStreamPosition: subscribedStreamPosition,
 	}
 	go func() {
 		defer func() {
@@ -225,7 +270,7 @@ func (s *service) goCatchupHistory(e centrifuge.SubscribedEvent) {
 			s.mutexHistoryCatchup.Unlock()
 		}()
 		log := log.With().Caller().Interface("subscribedStreamPosition", subscribedStreamPosition).Logger()
-		currentHistoricalStreamPosition := tracker.CurrentHistoricalStreamPosition
+		currentHistoricalStreamPosition := s.config.HistoricalStreamPosition
 		log.Debug().Interface("currentHistoricalStreamPosition", currentHistoricalStreamPosition).Msg("currentHistoricalStreamPosition - initial")
 
 		for {
@@ -233,7 +278,7 @@ func (s *service) goCatchupHistory(e centrifuge.SubscribedEvent) {
 				log.Debug().Msg("IsCanceled")
 				return
 			}
-			if tracker.CurrentHistoricalStreamPosition.Offset == tracker.CaughtUpStreamPosition.Offset {
+			if s.config.HistoricalStreamPosition.Offset == tracker.SubscribedStreamPosition.Offset {
 				log.Debug().Msg("caught up")
 				break
 			}
@@ -250,9 +295,11 @@ func (s *service) goCatchupHistory(e centrifuge.SubscribedEvent) {
 				break
 			}
 			for _, publication := range historyResult.Publications {
-				s.BatchManagement.Add(publication)
+				// normalize our historical pulls as if we got the event directly from centrifuge
+				s.internalOnPublicationHandler(&centrifuge.PublicationEvent{
+					Publication: publication,
+				})
 			}
-
 		}
 	}()
 
@@ -266,12 +313,6 @@ func IsCanceled(ctx context.Context) bool {
 		// The context has not been canceled
 		return false
 	}
-}
-
-func (b *batchManagement) Offer(batch *contracts_centrifuge.Batch) {
-	b.mutexBatch.Lock()
-	defer b.mutexBatch.Unlock()
-	b.Batchs.Offer(batch)
 }
 
 func NewPublicationBatcher(batchSize int32) *publicationBatcher {
@@ -306,15 +347,27 @@ func (b *batchManagement) Add(publication centrifuge.Publication) {
 	if ready {
 		// pull it from the batcher and add it to our batch queue
 		batch := b.publicationBatcher.PullBatch()
-		b.Batchs.Offer(batch)
+		b.Batchs.Put(batch) // PUT is the blocking call
 	}
 }
-func (b *batchManagement) PullBatch(publication centrifuge.Publication) *contracts_centrifuge.Batch {
-	batch, err := b.Batchs.Get()
+func (b *batchManagement) PullBatch(flush bool) *contracts_centrifuge.Batch {
+	isEmpty := b.Batchs.IsEmpty()
+	if isEmpty {
+		if flush {
+			// force the pull from the internal batcher, doesn't have to be full.
+			batch := b.publicationBatcher.PullBatch()
+			if len(batch.Publications) > 0 {
+				return batch
+			}
+		}
+		return nil
+	}
+
+	batch, err := b.Batchs.Get() // Get is the blocking call
 	if err != nil {
 		if err == queue.ErrNoElementsAvailable {
 			return nil
 		}
 	}
-	return batch
+	return batch.(*contracts_centrifuge.Batch)
 }

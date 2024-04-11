@@ -14,12 +14,12 @@ type (
 		GetToken func(evt centrifuge.ConnectionTokenEvent) (string, error)
 	}
 	CentrifugeConfig struct {
-		Channel                string                     `json:"channel"`
-		BatchSize              int32                      `json:"batchSize"`
-		NumberOfBatches        int32                      `json:"numberOfBatches"`
-		CatchupStreamPosition  *centrifuge.StreamPosition `json:"catchupStreamPosition"`
-		OnBatchReady           OnBatchReady               `json:"-"`
-		CentrifugeClientConfig *CentrifugeClientConfig    `json:"centrifugeClientConfig"`
+		Channel                  string                     `json:"channel"`
+		BatchSize                int32                      `json:"batchSize"`
+		NumberOfBatches          int                        `json:"numberOfBatches"`
+		HistoricalStreamPosition *centrifuge.StreamPosition `json:"historicalStreamPosition"`
+		OnBatchReady             OnBatchReady               `json:"-"`
+		CentrifugeClientConfig   *CentrifugeClientConfig    `json:"centrifugeClientConfig"`
 	}
 	Batch struct {
 		Publications []centrifuge.Publication
@@ -27,7 +27,7 @@ type (
 
 	ICentrifugeStreamBatcher interface {
 		Configure(ctx context.Context, config *CentrifugeConfig) error
-		GetBatch(ctx context.Context) (*Batch, error)
+		GetBatch(ctx context.Context, flush bool) (*Batch, error)
 		Start(ctx context.Context) error
 		Stop(ctx context.Context) error
 	}

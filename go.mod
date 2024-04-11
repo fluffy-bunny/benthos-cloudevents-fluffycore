@@ -21,6 +21,7 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.9.0
+	github.com/theodesp/blockingQueues v0.0.0-20171230192932-26531ad66e7c
 	github.com/twmb/franz-go v1.16.1
 	golang.org/x/oauth2 v0.19.0
 	golang.org/x/sync v0.6.0
