@@ -210,7 +210,7 @@ func (s *service) OnSubscribedHandler(e centrifuge.SubscribedEvent) {
 	s.log.Debug().Msg("OnSubscribedHandler")
 	// here we establish where centrifuge is in the stream
 	// fire up a go routine to catch up with history
-	s.goCatchupHistory(e)
+	s.goCatchupHistory(e.StreamPosition)
 }
 func (s *service) OnPublicationHandler(e centrifuge.PublicationEvent) {
 	s.log.Debug().Msg("OnPublicationHandler")
@@ -218,6 +218,15 @@ func (s *service) OnPublicationHandler(e centrifuge.PublicationEvent) {
 	// we are blocking publication to use from centrifuge until we have caught up with history
 	s.wgPublsh.Wait()
 	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~
+	// we may still be behind here.  If the stream position of this message is more than one greater than ours then we must catchup to that.
+
+	if e.Publication.Offset > s.config.HistoricalStreamPosition.Offset+1 {
+		s.goCatchupHistory(&centrifuge.StreamPosition{
+			Epoch:  s.config.HistoricalStreamPosition.Epoch,
+			Offset: e.Publication.Offset,
+		})
+		return
+	}
 	s.internalOnPublicationHandler(&e)
 }
 func (s *service) internalOnPublicationHandler(e *centrifuge.PublicationEvent) {
@@ -225,17 +234,17 @@ func (s *service) internalOnPublicationHandler(e *centrifuge.PublicationEvent) {
 	s.config.HistoricalStreamPosition.Offset = e.Publication.Offset
 }
 
-func (s *service) goCatchupHistory(e centrifuge.SubscribedEvent) {
-	log := s.log.With().Interface("subscribed_stream_position", e.StreamPosition).Logger()
+func (s *service) goCatchupHistory(streamPosition *centrifuge.StreamPosition) {
+	log := s.log.With().Interface("catchup_stream_position", streamPosition).Logger()
 	log.Info().Msg("goCatchupHistory")
 	if s.config.HistoricalStreamPosition == nil {
 		// our first time through
-		s.config.HistoricalStreamPosition = e.StreamPosition
+		s.config.HistoricalStreamPosition = streamPosition
 		log.Info().Msg("no historical data requested")
 		return
 	}
 	log = log.With().Interface("historical_stream_position", s.config.HistoricalStreamPosition).Logger()
-	if s.config.HistoricalStreamPosition.Offset == e.StreamPosition.Offset {
+	if s.config.HistoricalStreamPosition.Offset == streamPosition.Offset {
 		s.log.Info().Msg("already caught up")
 		return
 	}
@@ -244,10 +253,10 @@ func (s *service) goCatchupHistory(e centrifuge.SubscribedEvent) {
 		s.log.Error().Msg("bad config - HistoricalStreamPosition.Epoch is empty")
 		return
 	}
-	if s.config.HistoricalStreamPosition.Epoch != e.StreamPosition.Epoch {
+	if s.config.HistoricalStreamPosition.Epoch != streamPosition.Epoch {
 		// this will fail with the following error
 		// {"error":"112: unrecoverable position"}
-		s.config.HistoricalStreamPosition.Epoch = e.StreamPosition.Epoch
+		s.config.HistoricalStreamPosition.Epoch = streamPosition.Epoch
 		s.config.HistoricalStreamPosition.Offset = 0
 	}
 
@@ -261,7 +270,7 @@ func (s *service) goCatchupHistory(e centrifuge.SubscribedEvent) {
 	s.mutexHistoryCatchup.Lock()
 	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~
 	s.ctxCatchup, s.cancelCtxCatchup = context.WithCancel(context.Background())
-	subscribedStreamPosition := e.StreamPosition
+	subscribedStreamPosition := streamPosition
 	type StreamPositionTracker struct {
 		SubscribedStreamPosition *centrifuge.StreamPosition
 	}
