@@ -24,12 +24,15 @@ type (
 	Batch struct {
 		Publications []centrifuge.Publication
 	}
+	BatchState int
 
 	ICentrifugeStreamBatcher interface {
 		Configure(ctx context.Context, config *CentrifugeConfig) error
 		GetBatch(ctx context.Context, flush bool) (*Batch, error)
 		Start(ctx context.Context) error
 		Stop(ctx context.Context) error
+		IsRunning() bool
+		BatchState() BatchState
 	}
 	ICentrifugeClient interface {
 		fluffycore_contracts_common.IDispose
@@ -61,6 +64,12 @@ type (
 		centrifuge.SubscriptionErrorHandler
 	}
 	UnimplementedSubscriptionHandlers struct{}
+)
+
+const (
+	BatchState_AtLeastOneAvailable BatchState = iota
+	BatchState_PartiallyAvailable
+	BatchState_Empty
 )
 
 func (s UnimplementedClientHandlers) OnConnectedHandler(centrifuge.ConnectedEvent)                 {}

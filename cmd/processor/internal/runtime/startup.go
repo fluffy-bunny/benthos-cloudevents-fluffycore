@@ -11,6 +11,8 @@ import (
 	services_kafkacloudeventservice "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/services/kafkacloudeventservice"
 	services_processor "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/services/processor"
 	internal_version "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/cmd/processor/internal/version"
+	pkg_services_centrifuge_batcher "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/services/centrifuge/batcher"
+	pkg_services_centrifuge_client "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/services/centrifuge/client"
 	di "github.com/fluffy-bunny/fluffy-dozm-di"
 	fluffycore_contracts_ddprofiler "github.com/fluffy-bunny/fluffycore/contracts/ddprofiler"
 	fluffycore_contracts_middleware "github.com/fluffy-bunny/fluffycore/contracts/middleware"
@@ -86,6 +88,8 @@ func (s *startup) ConfigureServices(ctx context.Context, builder di.ContainerBui
 	services_kafkacloudeventservice.AddKafkaCloudEventServiceServer(builder)
 	services_kafkaclient.AddSingletonKafkaDeadLetterClient(builder)
 	services_kafkaclient.AddSingletonKafkaPublishingClient(builder)
+	pkg_services_centrifuge_batcher.AddTransientCentrifugeStreamBatcher(builder)
+	pkg_services_centrifuge_client.AddTransientCentrifugeClient(builder)
 
 }
 func (s *startup) Configure(ctx context.Context, rootContainer di.Container, unaryServerInterceptorBuilder fluffycore_contracts_middleware.IUnaryServerInterceptorBuilder, streamServerInterceptorBuilder fluffycore_contracts_middleware.IStreamServerInterceptorBuilder) {
@@ -142,6 +146,7 @@ func (s *startup) GetConfigOptions() *fluffycore_contracts_runtime.ConfigOptions
 		Destination: s.config,
 		RootConfig:  contracts_config.ConfigDefaultJSON,
 	}
+	return s.configOptions
 }
 
 func (s *startup) SetRootContainer(container di.Container) {

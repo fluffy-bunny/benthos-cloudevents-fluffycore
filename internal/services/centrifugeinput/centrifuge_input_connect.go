@@ -3,11 +3,13 @@ package centrifugeinput
 import (
 	"context"
 	"sync"
+	"time"
 
 	benthos_service "github.com/benthosdev/benthos/v4/public/service"
 	centrifuge "github.com/centrifugal/centrifuge-go"
 	contracts_storage "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/storage"
-	"github.com/rs/zerolog"
+	contracts_centrifuge "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/contracts/centrifuge"
+	zerolog "github.com/rs/zerolog"
 	log "github.com/rs/zerolog/log"
 )
 
@@ -33,43 +35,14 @@ func (s *service) Connect(ctx context.Context) error {
 		return err
 	}
 
-	// we may get multiple connect calls since this is benthos doing it.
-	// if we already have a subscription don't create another one.
-	if s.sub != nil {
-		return nil
+	if !s.centrifugeStreamBatcher.IsRunning() {
+		err := s.centrifugeStreamBatcher.Start(ctx)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to Run")
+			return err
+		}
 	}
 
-	client, err := s.centrifugeClient.GetClient()
-	if err != nil {
-		log.Error().Err(err).Msg("failed to GetClient")
-		return err
-	}
-
-	sub, err := client.NewSubscription(s.channel,
-		centrifuge.SubscriptionConfig{
-			Recoverable: true,
-			JoinLeave:   true,
-			Positioned:  true,
-		})
-	if err != nil {
-		log.Error().Err(err).Msg("failed to NewSubscription")
-		return err
-	}
-	s.sub = sub
-	// register for all the events
-	sub.OnError(s.OnSubscriptionErrorHandler)
-	sub.OnJoin(s.OnJoinHandler)
-	sub.OnLeave(s.OnLeaveHandler)
-	sub.OnPublication(s.OnPublicationHandler)
-	sub.OnSubscribed(s.OnSubscribedHandler)
-	sub.OnSubscribing(s.OnSubscribingHandler)
-	sub.OnUnsubscribed(s.OnUnsubscribedHandler)
-
-	err = sub.Subscribe()
-	if err != nil {
-		log.Error().Err(err).Msg("failed to Subscribe")
-		return err
-	}
 	// take a READ lock where our publish will unlock it upon getting a new message
 	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--
 	s.mutexBentosRead.Lock()
@@ -77,6 +50,90 @@ func (s *service) Connect(ctx context.Context) error {
 	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--
 
 	return nil
+}
+func (s *service) UntilNext() (time.Duration, bool) {
+	if s.period <= 0 {
+		return 0, false
+	}
+	tUntil := time.Until(s.lastBatch.Add(s.period))
+	if tUntil <= 0 {
+		tUntil = 1
+	}
+	return tUntil, true
+}
+func (s *service) ReadBatch(ctx context.Context) (benthos_service.MessageBatch, benthos_service.AckFunc, error) {
+	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--
+	s.mutexBentosRead.Lock()
+	// we block the read until the dispatched message has been acknowledged
+	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--
+	ctx, done := context.WithCancel(ctx)
+	defer done()
+
+	go func() {
+		<-ctx.Done()
+		s.cond.Broadcast()
+	}()
+	var batchReady, timedBatch bool
+	triggerTimed := func() {
+		batchReady = false
+		timedBatch = false
+
+		timedDur, exists := s.UntilNext()
+		if !exists {
+			return
+		}
+
+		timer := time.NewTimer(timedDur)
+		go func() {
+			defer timer.Stop()
+			select {
+			case <-timer.C:
+				s.cond.L.Lock()
+				defer s.cond.L.Unlock()
+				timedBatch = true
+				batchReady = true
+				s.cond.Broadcast()
+			case <-ctx.Done():
+			}
+		}()
+	}
+	triggerTimed()
+	// The output batch we're forming from the buffered batches
+	var outBatch benthos_service.MessageBatch
+	doBatchPull := func() (bool, error) {
+
+		//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--
+		s.cond.L.Lock()
+		defer s.cond.L.Unlock()
+		//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--
+
+		// if we got here we may or may not triggered a timed batch
+		batchState := s.centrifugeStreamBatcher.BatchState()
+		if timedBatch {
+			switch batchState {
+			case contracts_centrifuge.BatchState_AtLeastOneAvailable, contracts_centrifuge.BatchState_PartiallyAvailable:
+				batch, err := s.centrifugeStreamBatcher.GetBatch(ctx, true)
+				if err != nil {
+					return false, err
+				}
+			default:
+				s.lastBatch = time.Now()
+				triggerTimed()
+			}
+		}
+		return true, nil
+	}
+	for {
+		ok, err := doBatchPull()
+		if err != nil {
+			return nil, nil, err
+		}
+		if ok {
+			break
+		}
+	}
+	return nil, nil, nil
+
 }
 
 // Read a single message from a source, along with a function to be called
@@ -154,7 +211,7 @@ func (s *service) Close(ctx context.Context) error {
 		}
 		s.sub = nil
 	}
-	return s.centrifugeClient.Close(ctx)
+	return s.centrifugeStreamBatcher.Stop(ctx)
 }
 func (s *service) OnConnectedHandler(e centrifuge.ConnectedEvent) {
 	log.Info().Msg("OnConnectedHandler")

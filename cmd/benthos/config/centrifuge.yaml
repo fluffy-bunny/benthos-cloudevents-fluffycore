@@ -4,6 +4,12 @@ input:
   centrifuge_input:
     endpoint: ws://localhost:8079/connection/websocket
     channel: chat:index
+    batching:
+      count: 3
+      period: 60s
+      processors:
+        - archive:
+            format: binary
 
 pipeline:
   threads: 1

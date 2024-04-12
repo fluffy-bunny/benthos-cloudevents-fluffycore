@@ -23,7 +23,6 @@ type (
 	}
 	batchManagement struct {
 		publicationBatcher *publicationBatcher
-		mutexBatch         sync.Mutex
 
 		Batchs *blockingQueues.BlockingQueue
 	}
@@ -87,6 +86,21 @@ func init() {
 func AddTransientCentrifugeStreamBatcher(cb di.ContainerBuilder) {
 	di.AddTransient[contracts_centrifuge.ICentrifugeStreamBatcher](cb, stemService.Ctor)
 }
+func (s *service) IsRunning() bool {
+	//--~--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--
+	s.mutexEngine.Lock()
+	defer s.mutexEngine.Unlock()
+	//--~--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--
+	return s.running
+}
+func (s *service) BatchState() contracts_centrifuge.BatchState {
+	//--~--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--
+	s.mutexEngine.Lock()
+	defer s.mutexEngine.Unlock()
+	//--~--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--
+	return s.BatchManagement.BatchState()
+}
+
 func (s *service) Configure(ctx context.Context, config *contracts_centrifuge.CentrifugeConfig) error {
 	//--~--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--
 	s.mutexEngine.Lock()
@@ -335,6 +349,13 @@ func NewPublicationBatcher(batchSize int32) *publicationBatcher {
 		BatchSize: batchSize,
 	}
 }
+func (p *publicationBatcher) IsDirty() bool {
+	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~
+	return len(p.Publications) > 0
+}
 
 // Add adds a publication to the batcher. Returns true if the batch is full and ready to be sent.
 func (p *publicationBatcher) Add(publication centrifuge.Publication) bool {
@@ -357,6 +378,17 @@ func (p *publicationBatcher) PullBatch() *contracts_centrifuge.Batch {
 	p.Publications = nil
 	return batch
 }
+
+func (b *batchManagement) BatchState() contracts_centrifuge.BatchState {
+	if b.Batchs.IsEmpty() {
+		if b.publicationBatcher.IsDirty() {
+			return contracts_centrifuge.BatchState_PartiallyAvailable
+		}
+		return contracts_centrifuge.BatchState_Empty
+	}
+	return contracts_centrifuge.BatchState_AtLeastOneAvailable
+}
+
 func (b *batchManagement) Add(publication centrifuge.Publication) {
 	ready := b.publicationBatcher.Add(publication)
 	if ready {
