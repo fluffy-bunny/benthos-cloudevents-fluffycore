@@ -17,9 +17,9 @@ import (
 
 type (
 	publicationBatcher struct {
-		mutex        sync.Mutex
-		Publications []centrifuge.Publication
-		BatchSize    int32
+		mutex               sync.Mutex
+		PublicationPackages []*PublicationPackage
+		BatchSize           int32
 	}
 	batchManagement struct {
 		publicationBatcher *publicationBatcher
@@ -243,8 +243,15 @@ func (s *service) OnPublicationHandler(e centrifuge.PublicationEvent) {
 	}
 	s.internalOnPublicationHandler(&e)
 }
+
 func (s *service) internalOnPublicationHandler(e *centrifuge.PublicationEvent) {
-	s.BatchManagement.Add(e.Publication)
+	s.BatchManagement.Add(&PublicationPackage{
+		StreamPosition: &centrifuge.StreamPosition{
+			Epoch:  s.config.HistoricalStreamPosition.Epoch,
+			Offset: e.Publication.Offset,
+		},
+		publication: &e.Publication,
+	})
 	s.config.HistoricalStreamPosition.Offset = e.Publication.Offset
 }
 
@@ -354,17 +361,17 @@ func (p *publicationBatcher) IsDirty() bool {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~
-	return len(p.Publications) > 0
+	return len(p.PublicationPackages) > 0
 }
 
 // Add adds a publication to the batcher. Returns true if the batch is full and ready to be sent.
-func (p *publicationBatcher) Add(publication centrifuge.Publication) bool {
+func (p *publicationBatcher) Add(publicationPackage *PublicationPackage) bool {
 	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~
-	p.Publications = append(p.Publications, publication)
-	return int32(len(p.Publications)) >= p.BatchSize
+	p.PublicationPackages = append(p.PublicationPackages, publicationPackage)
+	return int32(len(p.PublicationPackages)) >= p.BatchSize
 }
 
 func (p *publicationBatcher) PullBatch() *contracts_centrifuge.Batch {
@@ -372,10 +379,14 @@ func (p *publicationBatcher) PullBatch() *contracts_centrifuge.Batch {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~--~
+	last := p.PublicationPackages[len(p.PublicationPackages)-1]
 	batch := &contracts_centrifuge.Batch{
-		Publications: p.Publications,
+		LastStreamPostition: last.StreamPosition,
 	}
-	p.Publications = nil
+	for _, publicationPackage := range p.PublicationPackages {
+		batch.Publications = append(batch.Publications, *publicationPackage.publication)
+	}
+	p.PublicationPackages = nil
 	return batch
 }
 
@@ -389,8 +400,13 @@ func (b *batchManagement) BatchState() contracts_centrifuge.BatchState {
 	return contracts_centrifuge.BatchState_AtLeastOneAvailable
 }
 
-func (b *batchManagement) Add(publication centrifuge.Publication) {
-	ready := b.publicationBatcher.Add(publication)
+type PublicationPackage struct {
+	StreamPosition *centrifuge.StreamPosition
+	publication    *centrifuge.Publication
+}
+
+func (b *batchManagement) Add(publicationPackage *PublicationPackage) {
+	ready := b.publicationBatcher.Add(publicationPackage)
 	if ready {
 		// pull it from the batcher and add it to our batch queue
 		batch := b.publicationBatcher.PullBatch()

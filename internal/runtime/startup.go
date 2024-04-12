@@ -18,6 +18,8 @@ import (
 	services_kafkasaslstream "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/kafkasaslstream"
 	services_kafkastream "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/kafkastream"
 	services_storage_inmemory_CentrifugeInputStorage "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/services/storage/inmemory/CentrifugeInputStorage"
+	pkg_services_centrifuge_batcher "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/services/centrifuge/batcher"
+	pkg_services_centrifuge_client "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/services/centrifuge/client"
 	di "github.com/fluffy-bunny/fluffy-dozm-di"
 	fluffycore_contracts_runtime "github.com/fluffy-bunny/fluffycore/contracts/runtime"
 	fluffycore_runtime "github.com/fluffy-bunny/fluffycore/runtime"
@@ -87,6 +89,8 @@ func (s *Startup) ConfigureServices(ctx context.Context, builder di.ContainerBui
 	//services_centrifugestream.AddSingletonIBenthosStream(builder)
 	services_benthosstream.AddTransientBenthosStream(builder)
 	services_storage_inmemory_CentrifugeInputStorage.AddSingletonCentrifugeInputStorage(builder)
+	pkg_services_centrifuge_batcher.AddTransientCentrifugeStreamBatcher(builder)
+	pkg_services_centrifuge_client.AddTransientCentrifugeClient(builder)
 }
 
 // onLoadMastodonConfig will load a file and merge it over the default config

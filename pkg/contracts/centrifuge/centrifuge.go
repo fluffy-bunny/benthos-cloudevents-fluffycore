@@ -22,7 +22,8 @@ type (
 		CentrifugeClientConfig   *CentrifugeClientConfig    `json:"centrifugeClientConfig"`
 	}
 	Batch struct {
-		Publications []centrifuge.Publication
+		Publications        []centrifuge.Publication
+		LastStreamPostition *centrifuge.StreamPosition
 	}
 	BatchState int
 

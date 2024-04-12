@@ -31,8 +31,10 @@ var configSpec = benthos_service.NewConfigSpec().
 
 func (s *service) Register() error {
 	ctx := context.Background()
-	benthos_service.RegisterInput(InputName,
-		configSpec, func(conf *benthos_service.ParsedConfig, mgr *benthos_service.Resources) (out benthos_service.Input, err error) {
+	benthos_service.RegisterBatchInput(
+		InputName,
+		configSpec,
+		func(conf *benthos_service.ParsedConfig, mgr *benthos_service.Resources) (out benthos_service.BatchInput, err error) {
 			s.logger = mgr.Logger()
 			log := s.logger.With("input", InputName).With("a", 1)
 			log.With("caller", utils.Caller()).Info("Register")
@@ -68,18 +70,13 @@ func (s *service) Register() error {
 				s.log.Error().Err(err).Msg("failed to GetLatestStreamPostition")
 				return nil, err
 			}
-			streamPosition := &centrifuge.StreamPosition{
-				Epoch:  "0000", // this forces the stream to start at the known begining.
-				Offset: 0,
-			}
-			if getLatestStreamPostitionResponse.StreamPosition != nil {
-				streamPosition = getLatestStreamPostitionResponse.StreamPosition
-			}
+
 			s.centrifugeStreamBatcher.Configure(ctx, &pkg_contracts_centrifuge.CentrifugeConfig{
 				Channel:                  "chat:index",
 				BatchSize:                int32(s.batchPolicy.Count),
 				NumberOfBatches:          2, // this is to cache ahead.
-				HistoricalStreamPosition: streamPosition,
+				HistoricalStreamPosition: getLatestStreamPostitionResponse.StreamPosition,
+				OnBatchReady:             s.OnBatchReady,
 				CentrifugeClientConfig: &pkg_contracts_centrifuge.CentrifugeClientConfig{
 					Endpoint: endpoint,
 					GetToken: func(e centrifuge.ConnectionTokenEvent) (string, error) {

@@ -76,12 +76,9 @@ func (s *service) GetLatestStreamPostition(request *contracts_storage.GetLatestS
 	if err := s.validateGetLatestStreamPostitionRequest(request); err != nil {
 		return nil, err
 	}
+	// ok to be nil
 	streamPosition := s.streamPositions[request.Namespace]
-	if streamPosition == nil {
-		streamPosition = &centrifuge.StreamPosition{
-			Offset: 10,
-		}
-	}
+
 	return &contracts_storage.GetLatestStreamPostitionResponse{
 		Namespace:      request.Namespace,
 		StreamPosition: streamPosition,

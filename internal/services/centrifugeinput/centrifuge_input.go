@@ -51,6 +51,7 @@ type (
 
 		period    time.Duration
 		lastBatch time.Time
+		closed    bool
 	}
 )
 

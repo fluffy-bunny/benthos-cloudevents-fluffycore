@@ -45,7 +45,7 @@ func (s *service) Connect(ctx context.Context) error {
 
 	// take a READ lock where our publish will unlock it upon getting a new message
 	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--
-	s.mutexBentosRead.Lock()
+	//s.mutexBentosRead.Lock()
 	// we block the read until the dispatched message has been acknowledged
 	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--
 
@@ -61,9 +61,12 @@ func (s *service) UntilNext() (time.Duration, bool) {
 	}
 	return tUntil, true
 }
+func (s *service) OnBatchReady() {
+	s.cond.Broadcast()
+}
 func (s *service) ReadBatch(ctx context.Context) (benthos_service.MessageBatch, benthos_service.AckFunc, error) {
 	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--
-	s.mutexBentosRead.Lock()
+	//s.mutexBentosRead.Lock()
 	// we block the read until the dispatched message has been acknowledged
 	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--
 	ctx, done := context.WithCancel(ctx)
@@ -73,9 +76,8 @@ func (s *service) ReadBatch(ctx context.Context) (benthos_service.MessageBatch, 
 		<-ctx.Done()
 		s.cond.Broadcast()
 	}()
-	var batchReady, timedBatch bool
+	var timedBatch bool
 	triggerTimed := func() {
-		batchReady = false
 		timedBatch = false
 
 		timedDur, exists := s.UntilNext()
@@ -91,49 +93,71 @@ func (s *service) ReadBatch(ctx context.Context) (benthos_service.MessageBatch, 
 				s.cond.L.Lock()
 				defer s.cond.L.Unlock()
 				timedBatch = true
-				batchReady = true
 				s.cond.Broadcast()
 			case <-ctx.Done():
 			}
 		}()
 	}
 	triggerTimed()
+	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--
+	s.cond.L.Lock()
+	defer s.cond.L.Unlock()
+	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--
+
 	// The output batch we're forming from the buffered batches
 	var outBatch benthos_service.MessageBatch
-	doBatchPull := func() (bool, error) {
 
-		//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--
-		s.cond.L.Lock()
-		defer s.cond.L.Unlock()
-		//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--
-
-		// if we got here we may or may not triggered a timed batch
+	for {
+		if s.closed {
+			return nil, nil, benthos_service.ErrEndOfBuffer
+		}
+		if ctx.Err() != nil {
+			return nil, nil, ctx.Err()
+		}
+		var batch *contracts_centrifuge.Batch
+		var err error
 		batchState := s.centrifugeStreamBatcher.BatchState()
-		if timedBatch {
-			switch batchState {
-			case contracts_centrifuge.BatchState_AtLeastOneAvailable, contracts_centrifuge.BatchState_PartiallyAvailable:
-				batch, err := s.centrifugeStreamBatcher.GetBatch(ctx, true)
-				if err != nil {
-					return false, err
-				}
-			default:
+		switch batchState {
+		case contracts_centrifuge.BatchState_AtLeastOneAvailable:
+			batch, err = s.centrifugeStreamBatcher.GetBatch(ctx, true)
+
+		case contracts_centrifuge.BatchState_PartiallyAvailable:
+			if timedBatch {
+				batch, err = s.centrifugeStreamBatcher.GetBatch(ctx, true)
+			}
+		default:
+			if timedBatch {
 				s.lastBatch = time.Now()
 				triggerTimed()
+				goto enter_wait
 			}
 		}
-		return true, nil
-	}
-	for {
-		ok, err := doBatchPull()
 		if err != nil {
 			return nil, nil, err
 		}
-		if ok {
-			break
-		}
-	}
-	return nil, nil, nil
+		if batch != nil {
+			for _, m := range batch.Publications {
+				outBatch = append(outBatch, benthos_service.NewMessage(m.Data))
+			}
+			ackFunc := func(ctx context.Context, ackErr error) error {
+				log := zerolog.Ctx(ctx).With().Logger()
+				_, err := s.centrifugeInputStorage.StoreStreamPostition(&contracts_storage.StoreStreamPostitionRequest{
+					Namespace:      s.channel,
+					StreamPosition: batch.LastStreamPostition,
+				})
+				if err != nil {
+					log.Error().Err(err).Msg("failed to StoreStreamPostition")
+				}
 
+				return err
+			}
+			s.lastBatch = time.Now()
+			return outBatch, ackFunc, nil
+		}
+	enter_wait:
+		// None of our exit conditions triggered, so exit
+		s.cond.Wait()
+	}
 }
 
 // Read a single message from a source, along with a function to be called
@@ -152,7 +176,7 @@ func (s *service) ReadBatch(ctx context.Context) (benthos_service.MessageBatch, 
 func (s *service) Read(ctx context.Context) (*benthos_service.Message, benthos_service.AckFunc, error) {
 
 	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--
-	s.mutexBentosRead.Lock()
+	//s.mutexBentosRead.Lock()
 	// we block the read until the dispatched message has been acknowledged
 	//--~--~--~--~--~--~--~--~--~-BARBED WIRE-~--~--~--~--~--~--~--~--~--~--~--~--
 
@@ -211,6 +235,7 @@ func (s *service) Close(ctx context.Context) error {
 		}
 		s.sub = nil
 	}
+	s.closed = true
 	return s.centrifugeStreamBatcher.Stop(ctx)
 }
 func (s *service) OnConnectedHandler(e centrifuge.ConnectedEvent) {
@@ -339,7 +364,7 @@ func (s *service) internalOnPublicationHandler(e *centrifuge.PublicationEvent) {
 		},
 	}
 	// we now can let the bentos read happen
-	s.mutexBentosRead.Unlock()
+	//s.mutexBentosRead.Unlock()
 }
 
 func (s *service) OnPublicationHandler(e centrifuge.PublicationEvent) {
