@@ -27,6 +27,10 @@ type (
 	}
 	BatchState int
 
+	// ICentrifugeTokenAccessor is exected to be a singleton
+	ISingletonCentrifugeTokenAccessor interface {
+		GetToken(evt centrifuge.ConnectionTokenEvent) (string, error)
+	}
 	ICentrifugeStreamBatcher interface {
 		Configure(ctx context.Context, config *CentrifugeConfig) error
 		GetBatch(ctx context.Context, flush bool) (*Batch, error)

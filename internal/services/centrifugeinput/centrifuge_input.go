@@ -8,9 +8,8 @@ import (
 	benthos_service "github.com/benthosdev/benthos/v4/public/service"
 	centrifuge "github.com/centrifugal/centrifuge-go"
 	contracts_benthos "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/benthos"
-	contracts_centrifuge "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/centrifuge"
 	contracts_storage "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/storage"
-	pkg_contracts_centrifuge "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/contracts/centrifuge"
+	contracts_centrifuge "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/contracts/centrifuge"
 	di "github.com/fluffy-bunny/fluffy-dozm-di"
 	zerolog "github.com/rs/zerolog"
 	log "github.com/rs/zerolog/log"
@@ -31,13 +30,11 @@ type (
 		batchPolicy              benthos_service.BatchPolicy
 		logger                   *benthos_service.Logger
 		centrifugeInputStorage   contracts_storage.ICentrifugeInputStorage
+		centrifugeTokenAccessor  contracts_centrifuge.ISingletonCentrifugeTokenAccessor
 		subscribedStreamPosition *centrifuge.StreamPosition
 		log                      zerolog.Logger
 		// this semaphore is to block the publish until our downstream has consumed and acked the message
 		sem *semaphore.Weighted
-
-		// this  mutexBentosRead is to guard against multiple reads
-		mutexBentosRead sync.Mutex
 
 		currentPublicationEvent *PublicationEvent
 
@@ -46,7 +43,7 @@ type (
 		wgPublsh                sync.WaitGroup
 		mutexHistoryCatchup     sync.Mutex
 		stopHistoryCatchup      bool
-		centrifugeStreamBatcher pkg_contracts_centrifuge.ICentrifugeStreamBatcher
+		centrifugeStreamBatcher contracts_centrifuge.ICentrifugeStreamBatcher
 		cond                    *sync.Cond
 
 		period    time.Duration
@@ -59,12 +56,14 @@ var stemService = &service{}
 
 func (s *service) Ctor(
 	centrifugeInputStorage contracts_storage.ICentrifugeInputStorage,
-	centrifugeStreamBatcher pkg_contracts_centrifuge.ICentrifugeStreamBatcher,
+	centrifugeStreamBatcher contracts_centrifuge.ICentrifugeStreamBatcher,
+	centrifugeTokenAccessor contracts_centrifuge.ISingletonCentrifugeTokenAccessor,
 ) *service {
 
 	log := log.With().Caller().Timestamp().Str("input", InputName).Logger()
 	sem := semaphore.NewWeighted(1)
 	svc := &service{
+		centrifugeTokenAccessor: centrifugeTokenAccessor,
 		centrifugeInputStorage:  centrifugeInputStorage,
 		log:                     log,
 		sem:                     sem,

@@ -5,11 +5,9 @@ import (
 	"time"
 
 	benthos_service "github.com/benthosdev/benthos/v4/public/service"
-	centrifuge "github.com/centrifugal/centrifuge-go"
 	contracts_storage "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/contracts/storage"
 	utils "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/internal/utils"
 	pkg_contracts_centrifuge "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/contracts/centrifuge"
-	pkg_services_centrifuge_client "github.com/fluffy-bunny/benthos-cloudevents-fluffycore/pkg/services/centrifuge/client"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 )
@@ -79,9 +77,7 @@ func (s *service) Register() error {
 				OnBatchReady:             s.OnBatchReady,
 				CentrifugeClientConfig: &pkg_contracts_centrifuge.CentrifugeClientConfig{
 					Endpoint: endpoint,
-					GetToken: func(e centrifuge.ConnectionTokenEvent) (string, error) {
-						return pkg_services_centrifuge_client.ExampleConnToken("49", 0), nil
-					},
+					GetToken: s.centrifugeTokenAccessor.GetToken,
 				},
 			})
 
