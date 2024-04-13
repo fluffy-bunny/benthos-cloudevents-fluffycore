@@ -25,6 +25,7 @@ import (
 // either ErrNotConnected is returned, or the reader is closed.
 func (s *service) Connect(ctx context.Context) error {
 	log := s.log
+	ctx = log.WithContext(ctx)
 	// this call is to make sure we can get to our storage.
 	_, err := s.centrifugeInputStorage.
 		GetLatestStreamPostition(&contracts_storage.GetLatestStreamPostitionRequest{

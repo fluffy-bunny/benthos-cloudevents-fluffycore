@@ -21,10 +21,15 @@ type (
 		PublicationPackages []*PublicationPackage
 		BatchSize           int32
 	}
+	batchManagementConfig struct {
+		NumberOfBatches int
+		BatchSize       int32
+		OnBatchReady    contracts_centrifuge.OnBatchReady
+	}
 	batchManagement struct {
+		config             *batchManagementConfig
 		publicationBatcher *publicationBatcher
-
-		Batchs *blockingQueues.BlockingQueue
+		Batchs             *blockingQueues.BlockingQueue
 	}
 	service struct {
 		contracts_centrifuge.UnimplementedSubscriptionHandlers
@@ -59,15 +64,16 @@ type (
 	}
 )
 
-func NewBatchManagement(NumberOfBatches int, batchSize int32) *batchManagement {
-	batch, err := blockingQueues.NewArrayBlockingQueue(uint64(NumberOfBatches))
+func NewBatchManagement(config *batchManagementConfig) *batchManagement {
+	batch, err := blockingQueues.NewArrayBlockingQueue(uint64(config.NumberOfBatches))
 	if err != nil {
 		panic(err)
 	}
 
 	return &batchManagement{
-		publicationBatcher: NewPublicationBatcher(batchSize),
+		publicationBatcher: NewPublicationBatcher(config.BatchSize),
 		Batchs:             batch,
+		config:             config,
 	}
 }
 
@@ -114,7 +120,11 @@ func (s *service) Configure(ctx context.Context, config *contracts_centrifuge.Ce
 		return err
 	}
 	s.config = config
-	s.BatchManagement = NewBatchManagement(config.NumberOfBatches, config.BatchSize)
+	s.BatchManagement = NewBatchManagement(&batchManagementConfig{
+		NumberOfBatches: int(config.NumberOfBatches),
+		BatchSize:       config.BatchSize,
+		OnBatchReady:    config.OnBatchReady,
+	})
 	return nil
 }
 func (s *service) GetBatch(ctx context.Context, flush bool) (*contracts_centrifuge.Batch, error) {
@@ -224,6 +234,7 @@ func (s *service) OnSubscribedHandler(e centrifuge.SubscribedEvent) {
 	s.log.Debug().Msg("OnSubscribedHandler")
 	// here we establish where centrifuge is in the stream
 	// fire up a go routine to catch up with history
+	s.log.Info().Interface("stream_position", e.StreamPosition).Msg("OnSubscribedHandler")
 	s.goCatchupHistory(e.StreamPosition)
 }
 func (s *service) OnPublicationHandler(e centrifuge.PublicationEvent) {
@@ -411,6 +422,9 @@ func (b *batchManagement) Add(publicationPackage *PublicationPackage) {
 		// pull it from the batcher and add it to our batch queue
 		batch := b.publicationBatcher.PullBatch()
 		b.Batchs.Put(batch) // PUT is the blocking call
+		if b.config.OnBatchReady != nil {
+			b.config.OnBatchReady()
+		}
 	}
 }
 func (b *batchManagement) PullBatch(flush bool) *contracts_centrifuge.Batch {

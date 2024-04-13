@@ -82,7 +82,7 @@
             "env": {
                 "APPLICATION_NAME": "processor",
                 "APPLICATION_ENVIRONMENT":"Development",
-                "LOG_LEVEL": "info",
+                "LOG_LEVEL": "debug",
                 "ENABLE_KAFKA_SASL": "false",
                 "INPUT_KAFKA_BROKERS": "localhost:9093",
                 "OUTPUT_CLOUDEVENTOUTPUT_GRPC_URL": "localhost:9050",  

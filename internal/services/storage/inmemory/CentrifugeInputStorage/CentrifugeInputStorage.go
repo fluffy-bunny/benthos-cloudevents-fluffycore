@@ -78,7 +78,13 @@ func (s *service) GetLatestStreamPostition(request *contracts_storage.GetLatestS
 	}
 	// ok to be nil
 	streamPosition := s.streamPositions[request.Namespace]
+	if streamPosition == nil {
+		streamPosition = &centrifuge.StreamPosition{
+			Epoch:  "FMvS",
+			Offset: 0,
+		}
 
+	}
 	return &contracts_storage.GetLatestStreamPostitionResponse{
 		Namespace:      request.Namespace,
 		StreamPosition: streamPosition,
